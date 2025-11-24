@@ -1,0 +1,50 @@
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.9.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    <!--
+        Added the entity User.
+    -->
+
+    <changeSet id="20241227230000-1" author="ngelmak">
+        <loadData
+            file="config/liquibase/data/user.csv"
+            separator=";"
+            tableName="nk_user">
+            <column name="created_date" type="timestamp" />
+        </loadData>
+
+        <loadData
+            file="config/liquibase/data/authority.csv"
+            separator=";"
+            tableName="nk_authority">
+            <column name="name" type="string" />
+        </loadData>
+
+        <loadData
+            file="config/liquibase/data/user_authority.csv"
+            separator=";"
+            tableName="nk_user_authority">
+            <column name="user_id" type="numeric" />
+        </loadData>
+    </changeSet>
+
+    <changeSet id="202412290015-5" author="ngelmak">
+        <loadData
+            file="config/liquibase/fake-data/user.csv"
+            separator=";"
+            tableName="nk_user">
+            <column name="created_date" type="timestamp" />
+        </loadData>
+    </changeSet>
+
+    <changeSet id="202412290015-6" author="ngelmak">
+        <loadData
+            file="config/liquibase/fake-data/user_authority.csv"
+            separator=";"
+            tableName="nk_user_authority"> </loadData>
+    </changeSet>
+
+</databaseChangeLog>
