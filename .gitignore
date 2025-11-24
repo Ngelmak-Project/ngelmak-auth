@@ -1,3 +1,8 @@
+target
+resources
+src/test
+ngelmak-directory
+
 # Compiled class file
 *.class
 
