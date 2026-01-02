@@ -1,5 +1,5 @@
-org/ngelmakproject/web/rest/errors/EmailAlreadyUsedException.class
 org/ngelmakproject/security/UserNotActivatedException.class
+org/ngelmakproject/web/rest/errors/EmailAlreadyUsedException.class
 org/ngelmakproject/web/rest/dto/LoginRequestDTO.class
 org/ngelmakproject/service/AuthenticateService.class
 org/ngelmakproject/web/rest/AuthenticateResource$JWTToken.class
@@ -12,14 +12,14 @@ org/ngelmakproject/web/rest/errors/ErrorConstants.class
 org/ngelmakproject/web/rest/AuthenticateResource.class
 org/ngelmakproject/web/rest/errors/UsernameAlreadyUsedException.class
 org/ngelmakproject/domain/User.class
-org/ngelmakproject/service/package-info.class
 org/ngelmakproject/domain/enumeration/DocType.class
+org/ngelmakproject/service/package-info.class
 org/ngelmakproject/security/JwtUtil.class
 org/ngelmakproject/domain/enumeration/CertificationStatus.class
 org/ngelmakproject/security/AuthoritiesConstants.class
 org/ngelmakproject/web/rest/util/ResponseUtil.class
-org/ngelmakproject/config/Constants.class
 org/ngelmakproject/domain/package-info.class
+org/ngelmakproject/config/Constants.class
 org/ngelmakproject/web/rest/AuthenticateResource$UserInfo.class
 org/ngelmakproject/web/rest/errors/package-info.class
 org/ngelmakproject/NgelmakProjectAuthApp.class

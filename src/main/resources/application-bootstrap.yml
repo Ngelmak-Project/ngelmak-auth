@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5000/ngelmakauthdb
+    username: ${BOOTSTRAP_DB_USERNAME}
+    password: ${BOOTSTRAP_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update   # or create / create-drop
+    show-sql: true
+
+  liquibase:
+    enabled: ${liquibase.run:false}
+    change-log: classpath:config/liquibase/master.xml

@@ -1,36 +1,29 @@
 spring:
   application:
     name: "Ngelmak Project"
-
-  profiles:
-    active: dev # or prod
-
-  config.import: vault:// # Enable Vault as a Config Data source. This requires at least one Vault backend to be enabled and resolvable.
+  config:
+    import: vault:// # Enable Vault as a Config Data source
   cloud:
     vault:
       uri: http://localhost:8200
       authentication: approle
       fail-fast: true # Enable fail-fast to force confirmation. Spring Boot to crash immediately when Vault/OpenBao is not reachable
       app-role:
-        role-id: 8a23bd57-a50a-79a3-0ae7-4964e5918ac0
-        secret-id: 0e66597f-7c9e-7ed8-8b68-897d2646c9ae
+        role-id: ${VAULT_ROLE_ID}
+        secret-id: ${VAULT_SECRET_ID}
       database:
-        enabled: false
+        enabled: true
         backend: database
         role: ngelmak-rw-role
       kv:
-        application-name: "" # skip the application name prefix
-        enabled: true
-        backend: kv
-        default-context: jjwt
-        profile-separator: "/" # kv/jjwt/dev or kv/jjwt/prod
+        enabled: false
 
   datasource:
     hikari:
       initialization-fail-timeout: 0
     url: jdbc:postgresql://localhost:5000/ngelmakauthdb
-    username: app_migrator
-    password: migratorpass
+    # username: v-root-ngelmak--NQiueQV69JiGulzxWmpD-1767183902
+    # password: YPvXyQ8fEf3Wr-nr9cC9
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect

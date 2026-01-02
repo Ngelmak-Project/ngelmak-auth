@@ -30,6 +30,22 @@
 	<properties>
 		<java.version>17</java.version>
 	</properties>
+	<dependencyManagement>
+		<dependencies>
+			<!-- 
+        Spring Cloud Dependencies for managing Spring Cloud versioning. 
+        This is necessary for ensuring compatibility between Spring Cloud components and Spring Boot.
+        The specified version (2022.0.4) is intended for use with Spring Boot 3.1.x.
+        -->
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>2022.0.4</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 	<dependencies>
 		<!-- Web applications (REST APIs, MVC) -->
 		<dependency>
@@ -37,13 +53,6 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<!-- Adds Spring MVC, embedded Tomcat (as the default web server), Jackson for JSON -->
-
-		<!-- Spring Data JPA for database access -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		<!-- Includes Hibernate ORM, Spring Data JPA, and database config -->
 
 		<!-- Spring Security for authentication and authorization -->
 		<dependency>
@@ -66,20 +75,6 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- Includes JUnit, Mockito, AssertJ, Spring TestContext -->
-
-		<!-- Spring Boot starter for using Redis -->
-		<!-- <dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency> -->
-		<!-- Adds Redis support with Spring Data Redis -->
-
-		<!-- Spring Boot starter for using Kafka -->
-		<!-- <dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-kafka</artifactId>
-		</dependency> -->
-		<!-- Adds Kafka client and Spring Kafka integration -->
 
 		<!-- Spring Boot starter for using Mail -->
 		<!-- <dependency>
@@ -113,26 +108,52 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- Spring Cloud Config dependency for external configuration management -->
-		<!-- <dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-config</artifactId>
-			<version>4.0.0</version>
-		</dependency> -->
-
-		<!-- Spring Cloud Vault Config dependency for integrating with HashiCorp Vault 
-     to manage application configuration securely -->
+		<!-- Spring Vault Libraries -->
 		<dependency>
+			<!-- Spring Vault Core. This is the core library for interacting with HashiCorp Vault. It
+			provides the API for authentication, reading secrets, and managing configurations. -->
+			<groupId>org.springframework.vault</groupId>
+			<artifactId>spring-vault-core</artifactId>
+			<version>3.0.2</version> <!-- Compatible with Spring Boot 3.2.x -->
+		</dependency>
+		<dependency>
+			<!-- Spring Cloud Vault Config library enables Spring applications to fetch configuration
+			properties from Vault, allowing secure access to application settings stored in Vault. -->
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-vault-config</artifactId>
-			<version>4.3.0</version>
+			<version>4.0.2</version>
+		</dependency>
+		<dependency>
+			<!-- Spring Cloud Vault Config for Databases extension allows the integration of Vault for
+			managing database credentials, automating the credential lifecycle for databases in a secure
+			manner. -->
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-vault-config-databases</artifactId>
+			<!-- No specific version; ensure compatibility with Spring Cloud version -->
 		</dependency>
 
-		<!-- Database dependencies -->
+		<!-- Database Dependencies -->
 		<dependency>
+			<!-- Spring Data JPA for database access. -->
+			<!-- This starter includes Spring Data JPA, which
+			simplifies data access and manipulation for relational databases. -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<!-- PostgreSQL Driver for connecting to PostgreSQL databases -->
+			<!-- This dependency includes the PostgreSQL JDBC driver, which allows applications to connect
+			and interact with PostgreSQL databases. -->
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
+			<scope>runtime</scope> <!-- Required at runtime for database connectivity -->
+		</dependency>
+		<dependency>
+			<!-- Liquibase for database versioning and data loading -->
+			<!-- This library is used for database schema management and version control, allowing you to
+			load fake data for testing and development. -->
+			<groupId>org.liquibase</groupId>
+			<artifactId>liquibase-core</artifactId>
 		</dependency>
 
 		<!-- Spring Boot DevTools: adds hot reload, auto restart, and other dev-time features -->
@@ -140,12 +161,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<optional>true</optional>
-		</dependency>
-
-		<!-- Load fake data -->
-		<dependency>
-			<groupId>org.liquibase</groupId>
-			<artifactId>liquibase-core</artifactId>
 		</dependency>
 	</dependencies>
 

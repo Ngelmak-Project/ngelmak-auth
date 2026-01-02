@@ -33,7 +33,7 @@ public class JwtUtil {
   /**
    * Initializes the secret key from a base64-encoded string in properties.
    */
-  public JwtUtil(@Value("${ngelmak.security.jwt.secret}") String secret) {
+  public JwtUtil(@Value("${jwt-secret-key:NOT_LOADED}") String secret) {
     // Decode base64 secret key
     byte[] keyBytes = Base64.getDecoder()
         .decode(secret.getBytes(StandardCharsets.UTF_8));

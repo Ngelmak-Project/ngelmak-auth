@@ -1,0 +1,36 @@
+services:
+  # --- Auth Service ---
+  # authenticator:
+  #   build: .
+  #   ports:
+  #     - "4005:4005"
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ngelmakdb
+  #     SPRING_DATASOURCE_USERNAME: postgres
+  #     SPRING_DATASOURCE_PASSWORD: supersecret
+  #     VAULT_ROLE_ID: ${VAULT_ROLE_ID}
+  #     VAULT_SECRET_ID: ${VAULT_SECRET_ID}
+  #   depends_on:
+  #     - postgres
+  #     - vault
+  #   networks:
+  #     - ngelmak-net
+
+  # --- Postgres Database ---
+  ngelmak_auth_db:
+    image: postgres:16
+    container_name: ngelmak-authdb
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: postgres
+    ports:
+      - "5000:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    networks:
+      - ngelmak-net
+
+networks:
+  ngelmak-net:
+    external: true
