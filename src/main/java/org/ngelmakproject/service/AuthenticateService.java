@@ -31,7 +31,8 @@ public class AuthenticateService {
     public Optional<String> authenticate(LoginRequestDTO loginRequestDTO) {
         Optional<String> token = userRepository.findOneByLogin(loginRequestDTO.getUsername())
                 .filter(u -> passwordEncoder.matches(loginRequestDTO.getPassword(), u.getPassword()))
-                .map(u -> jwtUtil.generateToken(u.getLogin(), u.getAuthorities()));
+                .map(u -> loginRequestDTO.isRememberMe() ? jwtUtil.generateRememberMeToken(u) : jwtUtil.generateToken(u)
+                );
 
         return token;
     }

@@ -32,7 +32,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SpringSecurityConfig {
 
-    @Value("${ngelmak.file.upload-directory.location}")
+    @Value("${file.upload-directory.location}")
     private String fileStorageLocation;
 
     @Autowired
@@ -45,8 +45,7 @@ public class SpringSecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("api/authenticate").permitAll()
-                        .requestMatchers("api/public/**").permitAll()
+                        .requestMatchers("api/authenticate", "api/register").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

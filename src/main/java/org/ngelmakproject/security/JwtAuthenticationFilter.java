@@ -3,6 +3,7 @@ package org.ngelmakproject.security;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,11 +43,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
 
-    log.info("JWT filter triggered");
+    log.info("🔐 JWT filter triggered");
 
     // Extract the Authorization header
     String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-    log.info("Auth header {}", authHeader);
     // If no token is provided, continue without authentication
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
       filterChain.doFilter(request, response);
@@ -56,19 +55,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     // Remove "Bearer " prefix to get the token
     String token = authHeader.substring(7);
-    log.info("Value token {}", token);
 
-    try {
-      // Parse and validate the JWT token
-      Claims claims = jwtUtil.validateToken(token);
-      String username = claims.getSubject();
-      String authorities = claims.get("authorities", String.class);
+    // Parse and validate the JWT token
+    Optional<Claims> optional = jwtUtil.tryParseClaims(token);
+    if (optional.isPresent()) {
+      // Long userId = Long.parseLong(optional.get().getSubject());
+      String username = optional.get().get("username", String.class);
+      String authorities = optional.get().get("authorities", String.class);
 
       // Extract authorities (roles) from custom claim
-      List<SimpleGrantedAuthority> grantedAuthorities = Arrays.stream(authorities.split(" "))
+      List<SimpleGrantedAuthority> grantedAuthorities = Arrays.stream(authorities.split(","))
           .map(SimpleGrantedAuthority::new)
           .toList();
-      System.out.println("Injected authorities: " + grantedAuthorities);
 
       // Create an Authentication object
       Authentication authentication = new UsernamePasswordAuthenticationToken(
@@ -76,8 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
       // Inject the Authentication into Spring Security's context
       SecurityContextHolder.getContext().setAuthentication(authentication);
-
-    } catch (JwtException e) {
+    } else {
       // If token is invalid, respond with 401 Unauthorized
       response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
       return;
