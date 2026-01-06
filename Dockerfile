@@ -1,6 +1,6 @@
 FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
-WORKDIR /app
+WORKDIR /ngelmak
 
 COPY pom.xml .
 
@@ -10,12 +10,12 @@ COPY src ./src
 
 RUN mvn clean package
 
-FROM openjdk:21-jdk AS runner
+FROM eclipse-temurin:21-jre-alpine AS runner
 
-WORKDIR /app
+WORKDIR /ngelmak
 
-COPY --from=builder ./app/target/auth-service-0.0.1-SNAPSHOT.jar ./app.jar
+COPY --from=builder ./ngelmak/target/ngelmak-auth-0.0.1-SNAPSHOT.jar ./ngelmak-auth.jar
 
-EXPOSE 4005
+EXPOSE 4042
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "ngelmak-auth.jar"]

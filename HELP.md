@@ -63,16 +63,16 @@ ALTER ROLE
 ### Create the OpenBao admin role (superuser)
 
 ```sql
-CREATE ROLE baoadmin WITH LOGIN SUPERUSER PASSWORD 'baopass';
+CREATE ROLE vaultadmin WITH LOGIN SUPERUSER PASSWORD 'baopass';
 
 CREATE ROLE
 ```
-**Change baoadmin password**
+**Change vaultadmin password**
 
 ### Create the application database
 
 ```sql
-CREATE DATABASE ngelmakauthdb OWNER baoadmin;
+CREATE DATABASE ngelmakauthdb OWNER vaultadmin;
 
 CREATE DATABASE
 ```
@@ -107,7 +107,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=bootstrap
 # or
 BOOTSTRAP_DB_USERNAME=app_migrator \
 BOOTSTRAP_DB_PASSWORD=migratorpass \
-mvn spring-boot:run -Dspring-boot.run.profiles=bootstrap -Dspring-boot.run.arguments="--liquibase.run=true"
+mvn spring-boot:run -Dspring-boot.run.profiles=bootstrap -Dspring-boot.run.arguments="--LIQUIBASE_RUN=true"
 ```
 
 
@@ -222,3 +222,18 @@ secret_id_accessor    70391877-226a-2724-aeee-7cfa774594d4
 secret_id_num_uses    0
 secret_id_ttl         48h
 ```
+
+
+
+
+
+
+
+BOOTSTRAP_DB_USERNAME=app_migrator \
+BOOTSTRAP_DB_PASSWORD=migratorpass \
+SPRING_PROFILES_ACTIVE=bootstrap \
+LIQUIBASE_RUN=true \
+docker compose up --build
+
+
+docker compose up --build
