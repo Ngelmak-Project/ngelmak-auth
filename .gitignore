@@ -1,12 +1,18 @@
-target
+# Maven target directory
+target/
 
-# Visual Studio Code
-.vscode
+# Maven wrapper files
+.mvn/
+
+# IDE directories
+.vscode/
+.idea/
+*.iml
 
 # Compiled class file
 *.class
 
-# Log file
+# Log files
 *.log
 
 # BlueJ files
@@ -15,7 +21,7 @@ target
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Package Files 
 *.jar
 *.war
 *.nar
@@ -24,6 +30,6 @@ target
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Virtual machine crash logs
 hs_err_pid*
 replay_pid*
