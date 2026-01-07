@@ -41,7 +41,10 @@ spring:
     enabled: false
 
 server:
+  host: localhost
   port: 4042
+  protocol: http
+
 
 logging:
   level:
