@@ -1,6 +1,5 @@
 package org.ngelmakproject.web.rest;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.ngelmakproject.service.AuthenticateService;
@@ -10,9 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -63,28 +59,17 @@ public class AuthenticateResource {
 
     }
 
-    @GetMapping("/me")
-    public UserInfo getUserWithAuthorities(Authentication authentication) {
-        log.debug("REST request to retrieve current user's info");
-        String username = authentication.getName();
-        List<String> authorities = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .toList();
+    // @GetMapping("/dashboard")
+    // @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // public ResponseEntity<String> getAdminDashboard() {
+    //     return ResponseEntity.ok("Welcome to the admin dashboard!");
+    // }
 
-        return new UserInfo(username, authorities);
-    }
-
-    @GetMapping("/dashboard")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseEntity<String> getAdminDashboard() {
-        return ResponseEntity.ok("Welcome to the admin dashboard!");
-    }
-
-    @GetMapping("/profile")
-    @PreAuthorize("hasAuthority('ROLE_USER')")
-    public ResponseEntity<String> getUserProfile() {
-        return ResponseEntity.ok("Here is your user profile.");
-    }
+    // @GetMapping("/profile")
+    // @PreAuthorize("hasAuthority('ROLE_USER')")
+    // public ResponseEntity<String> getUserProfile() {
+    //     return ResponseEntity.ok("Here is your user profile.");
+    // }
 
     /**
      * Object to return as body in JWT Authentication.
@@ -106,8 +91,4 @@ public class AuthenticateResource {
         }
     }
 
-    /**
-     * Simple DTO to return user info.
-     */
-    public record UserInfo(String username, List<String> authorities) {}
 }
