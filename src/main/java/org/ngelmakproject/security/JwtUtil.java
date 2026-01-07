@@ -51,6 +51,9 @@ public class JwtUtil {
     long now = System.currentTimeMillis();
     return Jwts.builder().subject(user.getId().toString())
         .claim("username", user.getLogin())
+        .claim("firstname", user.getFirstName())
+        .claim("lastname", user.getLastName())
+        .claim("email", user.getEmail())
         .claim("authorities", user.getAuthorities().stream().map(Authority::getName).collect(Collectors.joining(",")))
         .issuedAt(new Date(now)).expiration(new Date(now + expirationSeconds * 1000))
         .signWith(secretKey)

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,18 +61,37 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // Parse and validate the JWT token
     Optional<Claims> optional = jwtUtil.tryParseClaims(token);
     if (optional.isPresent()) {
-      // Long userId = Long.parseLong(optional.get().getSubject());
+      String userId = optional.get().getSubject();
       String username = optional.get().get("username", String.class);
-      String authorities = optional.get().get("authorities", String.class);
+      String firstname = optional.get().get("firstname", String.class);
+      String lastname = optional.get().get("lastname", String.class);
+      String email = optional.get().get("email", String.class);
+      String authoritiesStr = optional.get().get("authorities", String.class);
+
+      log.info("\n" +
+          "========< Gateway Auth Filter >=========\n" +
+          "User-Id          : {}\n" +
+          "User-Username    : {}\n" +
+          "User-Firstname   : {}\n" +
+          "User-Lastname    : {}\n" +
+          "User-Email       : {}\n" +
+          "User-Authorities : {}\n" +
+          "========================================", userId, username, firstname, lastname, email, authoritiesStr);
 
       // Extract authorities (roles) from custom claim
-      List<SimpleGrantedAuthority> grantedAuthorities = Arrays.stream(authorities.split(","))
+      Set<String> roles = Arrays.stream(authoritiesStr.split(","))
+          .collect(Collectors.toSet());
+
+      List<SimpleGrantedAuthority> grantedAuthorities = roles.stream()
           .map(SimpleGrantedAuthority::new)
           .toList();
 
+      UserPrincipal principal = new UserPrincipal(Long.parseLong(userId), username, firstname, lastname, email,
+          roles);
+
       // Create an Authentication object
       Authentication authentication = new UsernamePasswordAuthenticationToken(
-          username, null, grantedAuthorities);
+          principal, null, grantedAuthorities);
 
       // Inject the Authentication into Spring Security's context
       SecurityContextHolder.getContext().setAuthentication(authentication);
