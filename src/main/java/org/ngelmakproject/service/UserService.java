@@ -13,14 +13,12 @@ import org.ngelmakproject.repository.AuthorityRepository;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.AuthoritiesConstants;
 import org.ngelmakproject.security.UserPrincipal;
-import org.ngelmakproject.service.storage.FileStorageService;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
 import org.ngelmakproject.web.rest.errors.UsernameAlreadyUsedException;
 import org.ngelmakproject.web.rest.util.RandomUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -44,9 +42,6 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     private final AuthorityRepository authorityRepository;
-
-    @Autowired
-    private FileStorageService fileStorageService;
 
     public UserService(
             UserRepository userRepository,
