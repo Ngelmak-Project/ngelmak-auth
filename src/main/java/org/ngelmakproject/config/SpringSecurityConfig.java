@@ -1,7 +1,6 @@
 package org.ngelmakproject.config;
 
 import org.ngelmakproject.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -34,9 +33,16 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 @EnableMethodSecurity
 public class SpringSecurityConfig {
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
+    /**
+     * Defines the list of public (unauthenticated) API endpoints.
+     *
+     * This RequestMatcher is shared between:
+     *  - the SecurityFilterChain (to mark these endpoints as permitAll)
+     *  - the JwtAuthenticationFilter (to skip JWT validation on these endpoints)
+     *
+     * Keeping this list in a single bean avoids duplication and ensures
+     * consistent behavior across the security layer.
+     */
     @Bean
     public RequestMatcher publicEndpointsMatcher() {
         return new OrRequestMatcher(
@@ -45,7 +51,7 @@ public class SpringSecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, RequestMatcher publicEndpointsMatcher) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, RequestMatcher publicEndpointsMatcher, JwtAuthenticationFilter jwtFilter) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
@@ -53,7 +59,7 @@ public class SpringSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(publicEndpointsMatcher).permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
