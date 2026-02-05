@@ -93,15 +93,18 @@ public class User implements Serializable {
     @JsonIgnore
     private String resetKey;
 
+    @JsonIgnore
     @Column(name = "reset_date")
     private Instant resetDate = null;
 
+    @JsonIgnore
     @Column(name = "last_modified_date")
     private Instant lastModifiedDate = null;
 
     @Column(name = "created_date")
     private Instant createdDate = null;
 
+    @JsonIgnore
     @Column(name = "certified_date")
     private Instant certifiedDate;
 
@@ -109,10 +112,12 @@ public class User implements Serializable {
     @Column(name = "certification_status")
     private CertificationStatus certificationStatus = null;
 
+    @JsonIgnore
     @Enumerated(EnumType.STRING)
     @Column(name = "doc_type")
     private DocType docType;
 
+    @JsonIgnore
     @Column(name = "doc_id_hash", length = 60)
     private String docId;
 
@@ -213,7 +218,7 @@ public class User implements Serializable {
         this.certifiedDate = certifiedDate;
     }
 
-    public Instant getLastModofiedDate() {
+    public Instant getLastModifiedDate() {
         return lastModifiedDate;
     }
 

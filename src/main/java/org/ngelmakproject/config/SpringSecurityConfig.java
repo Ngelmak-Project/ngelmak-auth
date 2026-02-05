@@ -46,8 +46,7 @@ public class SpringSecurityConfig {
     @Bean
     public RequestMatcher publicEndpointsMatcher() {
         return new OrRequestMatcher(
-                new AntPathRequestMatcher("/api/authenticate"),
-                new AntPathRequestMatcher("/api/register"));
+                new AntPathRequestMatcher("/api/public/**"));
     }
 
     @Bean

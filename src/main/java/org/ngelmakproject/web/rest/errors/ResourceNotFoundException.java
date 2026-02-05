@@ -1,10 +1,12 @@
-// package org.ngelmakproject.web.rest.errors;
+package org.ngelmakproject.web.rest.errors;
 
-// public class ResourceNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
-//     private static final long serialVersionUID = 1L;
+public class ResourceNotFoundException extends BadRequestAlertException {
 
-//     public ResourceNotFoundException(String defaultMessage, String entityName, String errorKey) {
-//         super(defaultMessage, entityName, errorKey);
-//     }
-// }
+  private static final long serialVersionUID = 1L;
+
+  public ResourceNotFoundException(String defaultMessage, String entityName, String errorKey) {
+    super(defaultMessage, entityName, errorKey, HttpStatus.NOT_FOUND);
+  }
+}

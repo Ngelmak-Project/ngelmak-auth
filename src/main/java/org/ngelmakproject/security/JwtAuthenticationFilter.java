@@ -70,21 +70,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     Optional<Claims> optional = jwtUtil.tryParseClaims(token);
     if (optional.isPresent()) {
       String userId = optional.get().getSubject();
-      String username = optional.get().get("username", String.class);
-      String firstname = optional.get().get("firstname", String.class);
-      String lastname = optional.get().get("lastname", String.class);
+      String login = optional.get().get("login", String.class);
+      String firstName = optional.get().get("firstName", String.class);
+      String lastName = optional.get().get("lastName", String.class);
       String email = optional.get().get("email", String.class);
       String authoritiesStr = optional.get().get("authorities", String.class);
 
       log.info("\n" +
           "========< Gateway Auth Filter >=========\n" +
           "User-Id          : {}\n" +
-          "User-Username    : {}\n" +
+          "User-Login       : {}\n" +
           "User-Firstname   : {}\n" +
           "User-Lastname    : {}\n" +
           "User-Email       : {}\n" +
           "User-Authorities : {}\n" +
-          "========================================", userId, username, firstname, lastname, email, authoritiesStr);
+          "========================================", userId, login, firstName, lastName, email, authoritiesStr);
 
       // Extract authorities (roles) from custom claim
       Set<String> roles = Arrays.stream(authoritiesStr.split(","))
@@ -94,7 +94,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           .map(SimpleGrantedAuthority::new)
           .toList();
 
-      UserPrincipal principal = new UserPrincipal(Long.parseLong(userId), username, firstname, lastname, email,
+      UserPrincipal principal = new UserPrincipal(Long.parseLong(userId), login, firstName, lastName, email,
           roles);
 
       // Create an Authentication object

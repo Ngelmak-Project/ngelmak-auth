@@ -2,7 +2,6 @@ package org.ngelmakproject.service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -15,18 +14,22 @@ import org.ngelmakproject.security.AuthoritiesConstants;
 import org.ngelmakproject.security.UserPrincipal;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
-import org.ngelmakproject.web.rest.errors.UsernameAlreadyUsedException;
+import org.ngelmakproject.web.rest.errors.EmailAlreadyUsedException;
+import org.ngelmakproject.web.rest.errors.InvalidPasswordException;
+import org.ngelmakproject.web.rest.errors.LoginAlreadyUsedException;
+import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.ngelmakproject.web.rest.util.RandomUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 
 /**
  * Service class for managing users.
@@ -52,33 +55,73 @@ public class UserService {
         this.authorityRepository = authorityRepository;
     }
 
-
     /**
-     * Get the connected user details.
+     * Retrieves the conntected User details.
      *
-     * @return user details.
+     * <p>
+     * This method is designed to be safe even when invoked in contexts where
+     * authentication is not guaranteed (e.g., unsecured endpoints). It performs
+     * several defensive checks to avoid runtime exceptions such as
+     * {@link ClassCastException} or {@link NullPointerException}.
+     * </p>
+     *
+     * @return an {@code Optional<UserPrincipal>} for the authenticated user, or
+     *         empty
+     *         if
+     *         no valid authenticated user is present.
      */
-    public UserPrincipal getUserWithAuthorities() {
-        return ((UserPrincipal) SecurityContextHolder.getContext()
-                .getAuthentication()
-                .getPrincipal());
+    public Optional<UserPrincipal> getUserWithAuthorities() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        // No authentication available
+        if (authentication == null) {
+            return Optional.empty();
+        }
+        // Anonymous or not authenticated
+        if (!authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return Optional.empty();
+        }
+        Object principal = authentication.getPrincipal();
+        // Principal is not your expected custom user type
+        if (!(principal instanceof UserPrincipal userPrincipal)) {
+            return Optional.empty();
+        }
+        // [TODO] Save the account if exists into cache.
+        return Optional.of(userPrincipal);
     }
 
+    /**
+     * Activates a user account using the provided activation key.
+     * 
+     * <p>
+     * Marks the user as activated and clears the activation key.
+     *
+     * @param key Unique activation key
+     * @return Optional of activated User
+     */
     public Optional<User> activateRegistration(String key) {
         log.debug("Activating user for activation key {}", key);
         return userRepository
                 .findOneByActivationKey(key)
                 .map(user -> {
-                    // activate given user for the registration key.
                     user.setActivated(true);
                     user.setActivationKey(null);
                     log.debug("Activated user: {}", user);
                     return user;
-                });
+                }).map(userRepository::save);
     }
 
-    public Optional<User> completePasswordReset(String newPassword, String key) {
-        log.debug("Reset user password for reset key {}", key);
+    /**
+     * Completes password reset process for a user.
+     * <p>
+     * Resets password if the reset key is valid and not expired.
+     *
+     * @param newPassword New password to set
+     * @param key         Password reset key
+     * @return user with reset password
+     */
+    public User completePasswordReset(String newPassword, String key) {
+        log.debug("Complete User password reset with key {}", key);
         return userRepository
                 .findOneByResetKey(key)
                 .filter(user -> user.getResetDate().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)))
@@ -87,89 +130,195 @@ public class UserService {
                     user.setResetKey(null);
                     user.setResetDate(null);
                     return user;
-                });
+                })
+                .map(userRepository::save)
+                .orElseThrow(UserNotFoundException::new);
     }
 
-    public Optional<User> requestPasswordReset(String mail) {
+    /**
+     * Initiates password reset request for a user.
+     * <p>
+     * Generates a reset key for an activated user.
+     *
+     * @param email User's email address
+     * @return Optional of user with reset key
+     */
+    public User requestPasswordReset(String email) {
+        log.debug("Request to reset user with email {}", email);
         return userRepository
-                .findOneByEmailIgnoreCase(mail)
+                .findOneByEmailIgnoreCase(email)
                 .filter(User::isActivated)
                 .map(user -> {
                     user.setResetKey(RandomUtil.generateResetKey());
                     user.setResetDate(Instant.now());
                     return user;
-                });
-    }
-
-    public User registerUser(RegisterRequestDTO userDTO, String password) {
-        userRepository
-                .findOneByLogin(userDTO.getUsername().toLowerCase())
-                .ifPresent(existingUser -> {
-                    boolean removed = removeNonActivatedUser(existingUser);
-                    if (!removed) {
-                        throw new UsernameAlreadyUsedException();
-                    }
-                });
-        User newUser = new User();
-        String encryptedPassword = passwordEncoder.encode(password);
-        newUser.setLogin(userDTO.getUsername().toLowerCase());
-        // new user gets initially a generated password
-        newUser.setPassword(encryptedPassword);
-        // new user is not active
-        newUser.setActivated(false);
-        // new user gets registration key
-        newUser.setActivationKey(RandomUtil.generateActivationKey());
-        Set<Authority> authorities = new HashSet<>();
-        authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(authorities::add);
-        newUser.setAuthorities(authorities);
-        userRepository.save(newUser);
-        log.debug("Created Information for User: {}", newUser);
-        return newUser;
-    }
-
-    private boolean removeNonActivatedUser(User existingUser) {
-        if (existingUser.isActivated()) {
-            return false;
-        }
-        userRepository.delete(existingUser);
-        userRepository.flush();
-        return true;
+                })
+                .map(userRepository::save)
+                .orElseThrow(UserNotFoundException::new);
     }
 
     /**
-     * Update all information for a specific user, and return the modified user.
-     *
-     * @param userDTO user to update.
-     * @return updated user.
+     * Changes the user's password after validating the current password.
+     * 
+     * This method first retrieves the currently logged-in user through
+     * the `getUserWithAuthorities` method. It then checks whether the
+     * provided current plaintext password matches the user's existing
+     * encrypted password. If it matches, the method encrypts the new
+     * password and updates the user's password in the repository.
+     * 
+     * @param currentClearTextPassword the current password provided by the user in
+     *                                 plaintext
+     * @param newPassword              the new password to set for the user, also in
+     *                                 plaintext
+     * @throws InvalidPasswordException if the current provided password does not
+     *                                  match the
+     *                                  stored encrypted password
      */
-    public Optional<UserDTO> updateUser(UserDTO userDTO) {
-        return Optional.of(userRepository.findById(userDTO.getId()))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(user -> {
-                    user.setLogin(userDTO.getLogin().toLowerCase());
-                    user.setFirstName(userDTO.getFirstName());
-                    user.setLastName(userDTO.getLastName());
-                    if (userDTO.getEmail() != null) {
-                        user.setEmail(userDTO.getEmail().toLowerCase());
+    @Transactional
+    public void changePassword(String currentClearTextPassword, String newPassword) {
+        log.debug("Request change authenticated User's password");
+        getUserWithAuthorities().map(UserPrincipal::id)
+                .flatMap(userRepository::findById)
+                .ifPresent(user -> {
+                    String currentEncryptedPassword = user.getPassword();
+                    if (!passwordEncoder.matches(currentClearTextPassword,
+                            currentEncryptedPassword)) {
+                        throw new InvalidPasswordException();
                     }
-                    user.setImageUrl(userDTO.getImageUrl());
-                    user.setActivated(userDTO.isActivated());
-                    user.setLangKey(userDTO.getLangKey());
-                    Set<Authority> managedAuthorities = user.getAuthorities();
+                    String encryptedPassword = passwordEncoder.encode(newPassword);
+                    user.setPassword(encryptedPassword);
+                    log.debug("Changed password for User: {}", user);
+                });
+    }
+
+    /**
+     * Registers a new user in the system.
+     *
+     * <p>
+     * This method performs the following key operations:
+     * <ul>
+     * <li>Validates that the login and email are unique</li>
+     * <li>Creates a new user with an encrypted password</li>
+     * <li>Sets initial user state as inactive</li>
+     * <li>Generates an activation key</li>
+     * <li>Assigns default user authority</li>
+     * </ul>
+     *
+     * @param userDTO The data transfer object containing user registration details
+     * @return The newly created and saved User entity
+     *
+     * @throws LoginAlreadyUsedException If the provided login is already in use
+     * @throws EmailAlreadyUsedException If the provided email is already registered
+     */
+    public User register(RegisterRequestDTO userDTO) {
+        // Log the registration request for debugging
+        log.debug("Request to register a new User : {}", userDTO);
+
+        // Check if login is already taken
+        if (userRepository.findOneByLogin(userDTO.login().toLowerCase()).isPresent()) {
+            throw new LoginAlreadyUsedException();
+        }
+
+        // Check if email is already registered
+        if (userRepository.findOneByEmailIgnoreCase(userDTO.email()).isPresent()) {
+            throw new EmailAlreadyUsedException();
+        }
+
+        // Create a new user entity
+        User newUser = new User();
+        // Encrypt the user's password
+        String encryptedPassword = passwordEncoder.encode(userDTO.password());
+        // Set login (converted to lowercase to ensure uniqueness)
+        newUser.setLogin(userDTO.login().toLowerCase());
+        // Set encrypted password
+        newUser.setPassword(encryptedPassword);
+        // Initially set user as inactive
+        newUser.setActivated(false);
+        // Generate a unique activation key
+        newUser.setActivationKey(RandomUtil.generateActivationKey());
+        // Assign default user authority
+        var defaultAuthority = new Authority();
+        defaultAuthority.setName(AuthoritiesConstants.USER);
+        Set<Authority> authorities = Set.of(defaultAuthority);
+        newUser.setAuthorities(authorities);
+
+        // Save the new user to the database
+        newUser = userRepository.save(newUser);
+
+        // Log user creation for debugging
+        log.debug("Created Information for User: {}", newUser);
+
+        // Return the newly created user
+        return newUser;
+    }
+
+    /**
+     * Updates an existing User.
+     * <p>
+     * Only the fields that are present in the UserDTO will be updated.
+     *
+     * @param userDTO the data transfer object containing user details to update
+     * @return an Optional containing the updated User, or an empty Optional if the
+     *         user is not found
+     * @throws UserNotFoundException if the User is not found in the repository
+     */
+    public User updateUser(UserDTO userDTO) {
+        return this.getUserWithAuthorities()
+                .map(UserPrincipal::id)
+                .flatMap(userRepository::findById)
+                .map(existingUser -> {
+                    // Update user fields only if the value is present
+                    if (userDTO.login() != null) {
+                        existingUser.setLogin(userDTO.login().toLowerCase());
+                    }
+                    if (userDTO.firstName() != null) {
+                        existingUser.setFirstName(userDTO.firstName());
+                    }
+                    if (userDTO.lastName() != null) {
+                        existingUser.setLastName(userDTO.lastName());
+                    }
+                    if (userDTO.email() != null) {
+                        existingUser.setEmail(userDTO.email().toLowerCase());
+                    }
+
+                    // Check if login is already taken
+                    if (userRepository.findOneByLogin(userDTO.login().toLowerCase()).isPresent()) {
+                        throw new LoginAlreadyUsedException();
+                    }
+
+                    // Check if email is already registered
+                    if (userRepository.findOneByEmailIgnoreCase(userDTO.email()).isPresent()) {
+                        throw new EmailAlreadyUsedException();
+                    }
+
+                    // Update activation status and language key
+                    existingUser.setActivated(userDTO.isActivated());
+                    existingUser.setLangKey(userDTO.langKey());
+
+                    // Clear existing authorities and add new ones if presented
+                    Set<Authority> managedAuthorities = existingUser.getAuthorities();
                     managedAuthorities.clear();
-                    userDTO
-                            .getAuthorities()
-                            .stream()
+                    userDTO.authorities().stream()
                             .map(authorityRepository::findById)
                             .filter(Optional::isPresent)
                             .map(Optional::get)
                             .forEach(managedAuthorities::add);
-                    userRepository.save(user);
-                    log.debug("Changed Information for User: {}", user);
-                    return user;
+
+                    // Save and return the updated user
+                    return existingUser;
                 })
-                .map(UserDTO::new);
+                .map(userRepository::save)
+                .orElseThrow(UserNotFoundException::new);
+    }
+
+    @Scheduled(cron = "0 0 3 * * *") // every day at 3 AM
+    private void removeNonActivatedUser(User existingUser) {
+        // if (existingUser.isActivated()) {
+        // return false;
+        // }
+        // userRepository.delete(existingUser);
+        // userRepository.flush();
+        // return true;
     }
 
     public void deleteUser(String login) {
@@ -180,63 +329,24 @@ public class UserService {
                     log.debug("Deleted User: {}", user);
                 });
     }
-
-    /**
-     * Update basic information (first name, last name, email, language) for the
-     * current user.
-     *
-     * @param firstName first name of user.
-     * @param lastName  last name of user.
-     * @param email     email id of user.
-     * @param langKey   language key.
-     */
-    public void updateUser(String firstName, String lastName, String email, String langKey) {
-        // SecurityUtils.getCurrentUserLogin()
-        //         .flatMap(userRepository::findOneByLogin)
-        //         .ifPresent(user -> {
-        //             user.setFirstName(firstName);
-        //             user.setLastName(lastName);
-        //             if (email != null) {
-        //                 user.setEmail(email.toLowerCase());
-        //             }
-        //             user.setLangKey(langKey);
-        //             userRepository.save(user);
-        //             log.debug("Changed Information for User: {}", user);
-        //         });
-    }
-
-    @Transactional
-    public void changePassword(String currentClearTextPassword, String newPassword) {
-        // SecurityUtils.getCurrentUserLogin()
-        //         .flatMap(userRepository::findOneByLogin)
-        //         .ifPresent(user -> {
-        //             String currentEncryptedPassword = user.getPassword();
-        //             if (!passwordEncoder.matches(currentClearTextPassword, currentEncryptedPassword)) {
-        //                 throw new InvalidPasswordException();
-        //             }
-        //             String encryptedPassword = passwordEncoder.encode(newPassword);
-        //             user.setPassword(encryptedPassword);
-        //             log.debug("Changed password for User: {}", user);
-        //         });
-    }
-
     /**
      * Request for account certification.
      *
      * @param requestDTO user to update.
      * @return updated user.
      */
-    // public Optional<RegisterRequestDTO> certificationRequest(AccountCertificationRequestDTO requestDTO) {
-    //     return this.getUserWithAuthorities().map(
-    //             user -> {
-    //                 user.setCertificationStatus(CertificationStatus.REQUESTED);
-    //                 user.setDocType(requestDTO.getDocType());
-    //                 user.setDocId(requestDTO.getDocId());
-    //                 userRepository.save(user);
-    //                 log.debug("Changed Information for User: {}", user);
-    //                 return user;
-    //             })
-    //             .map(RegisterRequestDTO::new);
+    // public Optional<RegisterRequestDTO>
+    // certificationRequest(AccountCertificationRequestDTO requestDTO) {
+    // return this.getUserWithAuthorities().map(
+    // user -> {
+    // user.setCertificationStatus(CertificationStatus.REQUESTED);
+    // user.setDocType(requestDTO.getDocType());
+    // user.setDocId(requestDTO.getDocId());
+    // userRepository.save(user);
+    // log.debug("Changed Information for User: {}", user);
+    // return user;
+    // })
+    // .map(RegisterRequestDTO::new);
     // }
 
     /**
@@ -245,20 +355,24 @@ public class UserService {
      * @param requestDTO user to update.
      * @return updated user.
      */
-    // public Optional<RegisterRequestDTO> certificate(AccountCertificationRequestDTO requestDTO) {
-    //     CertificationStatus[] status = { CertificationStatus.REJECTED, CertificationStatus.REQUESTED };
-    //     return this.userRepository.findOneByDocIdAndCertificationStatusIn(requestDTO.getDocId(), status).map(
-    //             user -> {
-    //                 user.setDocId(
-    //                         passwordEncoder.encode(requestDTO.getDocId()));
-    //                 user.setCertificationStatus(CertificationStatus.CERTIFIED);
-    //                 user.setDocType(requestDTO.getDocType());
-    //                 user.setCertifiedDate(Instant.now());
-    //                 userRepository.save(user);
-    //                 log.debug("Changed Information for User: {}", user);
-    //                 return user;
-    //             })
-    //             .map(RegisterRequestDTO::new);
+    // public Optional<RegisterRequestDTO>
+    // certificate(AccountCertificationRequestDTO requestDTO) {
+    // CertificationStatus[] status = { CertificationStatus.REJECTED,
+    // CertificationStatus.REQUESTED };
+    // return
+    // this.userRepository.findOneByDocIdAndCertificationStatusIn(requestDTO.getDocId(),
+    // status).map(
+    // user -> {
+    // user.setDocId(
+    // passwordEncoder.encode(requestDTO.getDocId()));
+    // user.setCertificationStatus(CertificationStatus.CERTIFIED);
+    // user.setDocType(requestDTO.getDocType());
+    // user.setCertifiedDate(Instant.now());
+    // userRepository.save(user);
+    // log.debug("Changed Information for User: {}", user);
+    // return user;
+    // })
+    // .map(RegisterRequestDTO::new);
     // }
 
     /**
@@ -268,36 +382,35 @@ public class UserService {
      * @return updated user.
      */
     // public Optional<RegisterRequestDTO> certificationWithdrawal(String login) {
-    //     return this.userRepository.findOneByLoginAndCertificationStatus(login, CertificationStatus.CERTIFIED).map(
-    //             user -> {
-    //                 user.setDocId("");
-    //                 user.setCertificationStatus(CertificationStatus.REJECTED);
-    //                 user.setCertifiedDate(null);
-    //                 userRepository.save(user);
-    //                 log.debug("Changed Information for User: {}", user);
-    //                 return user;
-    //             })
-    //             .map(RegisterRequestDTO::new);
+    // return this.userRepository.findOneByLoginAndCertificationStatus(login,
+    // CertificationStatus.CERTIFIED).map(
+    // user -> {
+    // user.setDocId("");
+    // user.setCertificationStatus(CertificationStatus.REJECTED);
+    // user.setCertifiedDate(null);
+    // userRepository.save(user);
+    // log.debug("Changed Information for User: {}", user);
+    // return user;
+    // })
+    // .map(RegisterRequestDTO::new);
     // }
 
     // @Transactional(readOnly = true)
-    // public Optional<AccountCertificationRequestDTO> getAccountCertification(String login) {
-    //     return this.userRepository.findOneByLogin(login.toLowerCase()).map(AccountCertificationRequestDTO::new);
+    // public Optional<AccountCertificationRequestDTO>
+    // getAccountCertification(String login) {
+    // return
+    // this.userRepository.findOneByLogin(login.toLowerCase()).map(AccountCertificationRequestDTO::new);
     // }
 
     @Transactional(readOnly = true)
     public Page<UserDTO> getAllManagedUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(UserDTO::new);
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<User> getUserWithAuthoritiesByLogin(String login) {
-        return userRepository.findOneWithAuthoritiesByLogin(login);
+        return userRepository.findAll(pageable).map(UserDTO::from);
     }
 
     // @Transactional(readOnly = true)
     // public Optional<User> getUserWithAuthorities() {
-    //     return SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneWithAuthoritiesByLogin);
+    // return
+    // SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneWithAuthoritiesByLogin);
     // }
 
     /**
@@ -333,20 +446,22 @@ public class UserService {
      * @return the persisted entity.
      */
     // public Optional<RegisterRequestDTO> upload(MultipartFile file) {
-    //     log.debug("Request to update user image");
-    //     return this.getUserWithAuthorities().map(
-    //         user -> {
-    //             /**
-    //              * By default, user profile images are downloaded to the public directory, allowing access without authentication.
-    //              * Then we get for instance /public/images/ngelmak/ngelmak-log.jpg
-    //              */
-    //             String[] dirs = { "media", "user" };
-    //             URL url = fileStorageService.store(file, true, file.getOriginalFilename(), dirs);
-    //                 user.setImageUrl(url.toString());
-    //                 userRepository.save(user);
-    //                 log.debug("Changed Information for User: {}", user);
-    //                 return user;
-    //             })
-    //             .map(RegisterRequestDTO::new);
+    // log.debug("Request to update user image");
+    // return this.getUserWithAuthorities().map(
+    // user -> {
+    // /**
+    // * By default, user profile images are downloaded to the public directory,
+    // allowing access without authentication.
+    // * Then we get for instance /public/images/ngelmak/ngelmak-log.jpg
+    // */
+    // String[] dirs = { "media", "user" };
+    // URL url = fileStorageService.store(file, true, file.getOriginalFilename(),
+    // dirs);
+    // user.setImageUrl(url.toString());
+    // userRepository.save(user);
+    // log.debug("Changed Information for User: {}", user);
+    // return user;
+    // })
+    // .map(RegisterRequestDTO::new);
     // }
 }

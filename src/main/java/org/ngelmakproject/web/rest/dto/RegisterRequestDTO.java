@@ -6,36 +6,12 @@ import jakarta.validation.constraints.Size;
 /**
  * View Model object for storing a user's info.
  */
-public class RegisterRequestDTO {
+public record RegisterRequestDTO(
+        @NotNull(message = "Email cannot be null") @Size(min = 4, max = 50, message = "Email must be between 4 and 50 characters") String email,
 
-    @NotNull
-    @Size(min = 3, max = 50)
-    private String username;
+        @NotNull(message = "Login cannot be null") @Size(min = 4, max = 50, message = "Login must be between 4 and 50 characters") String login,
 
-    @NotNull
-    @Size(min = 8, max = 100)
-    private String password;
+        @NotNull(message = "Password cannot be null") @Size(min = 8, max = 20, message = "Password must be between 8 and 20 characters") String password
 
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    @Override
-    public String toString() {
-        return "RegisterRequestDTO [username=" + username + ", password=" + password + "]";
-    }
-
+) {
 }

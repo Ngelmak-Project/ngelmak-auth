@@ -26,7 +26,7 @@ import io.jsonwebtoken.security.Keys;
 public class JwtUtil {
 
   private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
-  
+
   private final SecretKey secretKey;
   private final long expirationSeconds;
   private final long rememberMeExpirationSeconds;
@@ -51,8 +51,8 @@ public class JwtUtil {
     long now = System.currentTimeMillis();
     return Jwts.builder().subject(user.getId().toString())
         .claim("username", user.getLogin())
-        .claim("firstname", user.getFirstName())
-        .claim("lastname", user.getLastName())
+        .claim("firstName", user.getFirstName())
+        .claim("lastName", user.getLastName())
         .claim("email", user.getEmail())
         .claim("authorities", user.getAuthorities().stream().map(Authority::getName).collect(Collectors.joining(",")))
         .issuedAt(new Date(now)).expiration(new Date(now + expirationSeconds * 1000))

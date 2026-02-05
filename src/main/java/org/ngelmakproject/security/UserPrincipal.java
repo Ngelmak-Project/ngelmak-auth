@@ -1,57 +1,28 @@
 package org.ngelmakproject.security;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
-/**
- * Internal representation of the authenticated user.
- */
-public class UserPrincipal {
+import org.ngelmakproject.domain.Authority;
+import org.ngelmakproject.domain.User;
 
-    private final Long id;
-    private final String username;
-    private final String firstname;
-    private final String lastname;
-    private final String email;
-    private final Set<String> authorities;
+public record UserPrincipal(
+        Long id,
+        String login,
+        String firstName,
+        String lastName,
+        String email,
+        Set<String> authorities) {
 
-    public UserPrincipal(Long id, String username, String firstname, String lastname, String email,
-            Set<String> authorities) {
-        this.id = id;
-        this.username = username;
-        this.firstname = firstname;
-        this.lastname = lastname;
-        this.email = email;
-        this.authorities = authorities;
+    public static UserPrincipal from(User u) {
+        return new UserPrincipal(
+                u.getId(),
+                u.getLogin(),
+                u.getFirstName(),
+                u.getLastName(),
+                u.getEmail(),
+                u.getAuthorities().stream()
+                        .map(Authority::getName)
+                        .collect(Collectors.toSet()));
     }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getFirstname() {
-        return firstname;
-    }
-
-    public String getLastname() {
-        return lastname;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public Set<String> getAuthorities() {
-        return authorities;
-    }
-
-    @Override
-    public String toString() {
-        return "UserPrincipal [id=" + id + ", username=" + username + ", firstname=" + firstname + ", lastname="
-                + lastname + ", email=" + email + ", authorities=" + authorities + "]";
-    }
-
 }
