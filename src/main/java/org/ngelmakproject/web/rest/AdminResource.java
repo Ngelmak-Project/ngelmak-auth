@@ -41,7 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminResource {
 	private static final Logger log = LoggerFactory.getLogger(AdminResource.class);
 
-	@Value("${ngelmak.clientApp.name}")
+	@Value("${spring.application.name}")
 	private String applicationName;
 
 	private final UserService userService;
