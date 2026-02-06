@@ -80,8 +80,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
           "========< Gateway Auth Filter >=========\n" +
           "User-Id          : {}\n" +
           "User-Login       : {}\n" +
-          "User-Firstname   : {}\n" +
-          "User-Lastname    : {}\n" +
+          "User-First-Name  : {}\n" +
+          "User-Last-Name   : {}\n" +
           "User-Email       : {}\n" +
           "User-Authorities : {}\n" +
           "========================================", userId, login, firstName, lastName, email, authoritiesStr);

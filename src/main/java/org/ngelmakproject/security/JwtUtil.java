@@ -50,7 +50,7 @@ public class JwtUtil {
   public String buildToken(User user, long expirationSeconds) {
     long now = System.currentTimeMillis();
     return Jwts.builder().subject(user.getId().toString())
-        .claim("username", user.getLogin())
+        .claim("login", user.getLogin())
         .claim("firstName", user.getFirstName())
         .claim("lastName", user.getLastName())
         .claim("email", user.getEmail())

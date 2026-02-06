@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
  * └── /user # User-level secured endpoints
  * │ ├── GET /profile
  * │ ├── PUT /update
+ * │ ├── PUT /upload-avatar
  * │ ├── POST /change-password
  * │ └── POST /certifications
  */

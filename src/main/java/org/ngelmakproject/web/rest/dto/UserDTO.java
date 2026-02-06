@@ -21,7 +21,6 @@ public record UserDTO(
         Instant createdDate,
         CertificationStatus certificationStatus,
         Set<String> authorities
-
 ) {
     public static UserDTO from(User user) {
         return new UserDTO(

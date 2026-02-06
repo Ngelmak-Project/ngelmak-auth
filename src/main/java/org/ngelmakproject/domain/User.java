@@ -75,8 +75,8 @@ public class User implements Serializable {
     @Column(nullable = false)
     private boolean activated = false;
 
-    @Size(min = 2, max = 10)
-    @Column(name = "lang_key", length = 10)
+    @Size(min = 2, max = 5)
+    @Column(name = "lang_key", length = 5)
     private String langKey;
 
     @Size(max = 256)
