@@ -3,7 +3,6 @@ package org.ngelmakproject.web.rest;
 import java.util.Optional;
 
 import org.ngelmakproject.domain.User;
-import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.service.MailService;
 import org.ngelmakproject.service.UserService;
 import org.ngelmakproject.web.rest.dto.PasswordChangeDTO;
@@ -11,7 +10,6 @@ import org.ngelmakproject.web.rest.dto.UserDTO;
 import org.ngelmakproject.web.rest.errors.BadRequestAlertException;
 import org.ngelmakproject.web.rest.errors.EmailAlreadyUsedException;
 import org.ngelmakproject.web.rest.errors.InvalidPasswordException;
-import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
  * └── /user # User-level secured endpoints
  * │ ├── GET /profile
  * │ ├── PUT /update
- * │ └── POST /change-password
+ * │ ├── POST /change-password
+ * │ └── POST /certifications
  */
 @RestController
 @RequestMapping("/api/user")
@@ -54,12 +53,10 @@ public class UserResource {
     @Value("${spring.application.name}")
     private String applicationName;
 
-    private final UserRepository userRepository;
     private final UserService userService;
     private final MailService mailService;
 
-    public UserResource(UserRepository userRepository, UserService userService, MailService mailService) {
-        this.userRepository = userRepository;
+    public UserResource(UserService userService, MailService mailService) {
         this.userService = userService;
         this.mailService = mailService;
     }
@@ -72,13 +69,9 @@ public class UserResource {
      *                          couldn't be returned.
      */
     @GetMapping("/profile")
-    public UserDTO getUser() {
+    public ResponseEntity<UserDTO> getUser() {
         log.debug("Request to get current User details");
-        return userService.getUserWithAuthorities().map(userPrincipal -> {
-            return userRepository.findById(userPrincipal.id())
-                    .map(UserDTO::from)
-                    .orElseThrow(() -> new UserResourceException("User could not be found"));
-        }).orElseThrow(UserNotFoundException::new);
+        return ResponseEntity.ok(UserDTO.from(userService.profile()));
     }
 
     /**

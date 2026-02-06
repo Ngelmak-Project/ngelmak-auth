@@ -41,9 +41,7 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
-
     private final PasswordEncoder passwordEncoder;
-
     private final AuthorityRepository authorityRepository;
 
     public UserService(
@@ -88,6 +86,28 @@ public class UserService {
         }
         // [TODO] Save the account if exists into cache.
         return Optional.of(userPrincipal);
+    }
+
+    /**
+     * Retrieves the details of the currently logged-in user.
+     * 
+     * <p>
+     * This method logs a debug message indicating that it is fetching the current
+     * user's details. It retrieves the user's ID using the `getUserWithAuthorities`
+     * method, and then queries the user repository
+     * to find the corresponding User object. If the user is not found,
+     * a `UserNotFoundException` is thrown.
+     * 
+     * @return the User object representing the current user, including their
+     *         details and authorities
+     * @throws UserNotFoundException if no user is found for the current session
+     */
+    public User profile() {
+        log.debug("Get current User details");
+        return getUserWithAuthorities()
+                .map(UserPrincipal::id)
+                .flatMap(userRepository::findById)
+                .orElseThrow(UserNotFoundException::new);
     }
 
     /**
