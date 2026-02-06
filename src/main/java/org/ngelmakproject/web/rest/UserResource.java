@@ -7,7 +7,7 @@ import org.ngelmakproject.service.MailService;
 import org.ngelmakproject.service.UserService;
 import org.ngelmakproject.web.rest.dto.PasswordChangeDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
-import org.ngelmakproject.web.rest.errors.BadRequestAlertException;
+import org.ngelmakproject.web.rest.dto.UserUpdateDTO;
 import org.ngelmakproject.web.rest.errors.EmailAlreadyUsedException;
 import org.ngelmakproject.web.rest.errors.InvalidPasswordException;
 import org.slf4j.Logger;
@@ -84,14 +84,10 @@ public class UserResource {
      *                                   user login wasn't found.
      */
     @PutMapping("/update")
-    public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO) {
-        log.debug("REST request to update User : {}", userDTO);
-        if (userDTO.id() == null) {
-            throw new BadRequestAlertException("Invalid id", ENTITY_NAME, "idnull");
-        }
-        var newAccount = userService.updateUser(userDTO);
+    public ResponseEntity<UserDTO> updateUser(@RequestBody UserUpdateDTO userUpdateDTO) {
+        log.debug("REST request to update User : {}", userUpdateDTO);
         return ResponseEntity.ok()
-                .body(UserDTO.from(newAccount));
+                .body(UserDTO.from(userService.updateUser(userUpdateDTO)));
     }
 
     /**

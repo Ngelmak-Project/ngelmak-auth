@@ -14,6 +14,7 @@ import org.ngelmakproject.security.AuthoritiesConstants;
 import org.ngelmakproject.security.UserPrincipal;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
+import org.ngelmakproject.web.rest.dto.UserUpdateDTO;
 import org.ngelmakproject.web.rest.errors.EmailAlreadyUsedException;
 import org.ngelmakproject.web.rest.errors.InvalidPasswordException;
 import org.ngelmakproject.web.rest.errors.LoginAlreadyUsedException;
@@ -282,48 +283,21 @@ public class UserService {
      *         user is not found
      * @throws UserNotFoundException if the User is not found in the repository
      */
-    public User updateUser(UserDTO userDTO) {
+    public User updateUser(UserUpdateDTO userUpdateDTO) {
         return this.getUserWithAuthorities()
                 .map(UserPrincipal::id)
                 .flatMap(userRepository::findById)
                 .map(existingUser -> {
                     // Update user fields only if the value is present
-                    if (userDTO.login() != null) {
-                        existingUser.setLogin(userDTO.login().toLowerCase());
+                    if (userUpdateDTO.firstName() != null) {
+                        existingUser.setFirstName(userUpdateDTO.firstName());
                     }
-                    if (userDTO.firstName() != null) {
-                        existingUser.setFirstName(userDTO.firstName());
+                    if (userUpdateDTO.lastName() != null) {
+                        existingUser.setLastName(userUpdateDTO.lastName());
                     }
-                    if (userDTO.lastName() != null) {
-                        existingUser.setLastName(userDTO.lastName());
+                    if (userUpdateDTO.langKey() != null) {
+                        existingUser.setLangKey(userUpdateDTO.langKey());
                     }
-                    if (userDTO.email() != null) {
-                        existingUser.setEmail(userDTO.email().toLowerCase());
-                    }
-
-                    // Check if login is already taken
-                    if (userRepository.findOneByLogin(userDTO.login().toLowerCase()).isPresent()) {
-                        throw new LoginAlreadyUsedException();
-                    }
-
-                    // Check if email is already registered
-                    if (userRepository.findOneByEmailIgnoreCase(userDTO.email()).isPresent()) {
-                        throw new EmailAlreadyUsedException();
-                    }
-
-                    // Update activation status and language key
-                    existingUser.setActivated(userDTO.isActivated());
-                    existingUser.setLangKey(userDTO.langKey());
-
-                    // Clear existing authorities and add new ones if presented
-                    Set<Authority> managedAuthorities = existingUser.getAuthorities();
-                    managedAuthorities.clear();
-                    userDTO.authorities().stream()
-                            .map(authorityRepository::findById)
-                            .filter(Optional::isPresent)
-                            .map(Optional::get)
-                            .forEach(managedAuthorities::add);
-
                     // Save and return the updated user
                     return existingUser;
                 })

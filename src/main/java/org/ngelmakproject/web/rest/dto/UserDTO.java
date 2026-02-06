@@ -12,7 +12,6 @@ import org.ngelmakproject.domain.enumeration.CertificationStatus;
  * A DTO representing a user, with his authorities.
  */
 public record UserDTO(
-        Long id,
         String login,
         String firstName,
         String lastName,
@@ -26,7 +25,6 @@ public record UserDTO(
 ) {
     public static UserDTO from(User user) {
         return new UserDTO(
-                user.getId(),
                 user.getLogin(),
                 user.getFirstName(),
                 user.getLastName(),
@@ -37,18 +35,4 @@ public record UserDTO(
                 user.getCertificationStatus(),
                 user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet()));
     }
-
-    // public static UserDTO from(UserPrincipal u) {
-    //     return new UserDTO(
-    //             u.id(),
-    //             u.login(),
-    //             u.firstName(),
-    //             u.lastName(),
-    //             u.email(),
-    //             u.activated(),
-    //             u.langKey(),
-    //             u.createdDate(),
-    //             u.certificationStatus(),
-    //             u.authorities());
-    // }
 }
