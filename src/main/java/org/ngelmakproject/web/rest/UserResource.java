@@ -100,6 +100,7 @@ public class UserResource {
      */
     @GetMapping("/activate")
     public void activateUser(@RequestParam(value = "key") String key) {
+        log.debug("REST request to activate User's email");
         Optional<User> user = userService.activateRegistration(key);
         if (!user.isPresent()) {
             throw new UserResourceException("No user was found for this activation key");
@@ -116,7 +117,7 @@ public class UserResource {
     @PostMapping("/change-password")
     public void changePassword(@RequestBody PasswordChangeDTO passwordChangeDto) {
         log.debug("REST request to change User's password : {}", passwordChangeDto);
-        userService.changePassword(passwordChangeDto.getCurrentPassword(), passwordChangeDto.getNewPassword());
+        userService.changePassword(passwordChangeDto.currentPassword(), passwordChangeDto.newPassword());
     }
 
     /**
