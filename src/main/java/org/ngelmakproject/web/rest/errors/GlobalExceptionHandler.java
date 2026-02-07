@@ -1,10 +1,9 @@
-package org.ngelmakproject.web.rest;
+package org.ngelmakproject.web.rest.errors;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.ngelmakproject.web.rest.errors.BadRequestAlertException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;

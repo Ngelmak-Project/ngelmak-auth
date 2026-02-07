@@ -1,7 +1,5 @@
 package org.ngelmakproject.web.rest;
 
-import java.util.Optional;
-
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.service.MailService;
 import org.ngelmakproject.service.UserService;
@@ -10,10 +8,11 @@ import org.ngelmakproject.web.rest.dto.UserDTO;
 import org.ngelmakproject.web.rest.dto.UserUpdateDTO;
 import org.ngelmakproject.web.rest.errors.EmailAlreadyUsedException;
 import org.ngelmakproject.web.rest.errors.InvalidPasswordException;
+import org.ngelmakproject.web.rest.errors.LoginAlreadyUsedException;
+import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -33,19 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
  * │ ├── PUT /update
  * │ ├── PUT /upload-avatar
  * │ ├── POST /change-password
+ * │ ├── POST /update-email
  * │ └── POST /certifications
  */
 @RestController
 @RequestMapping("/api/user")
 @PreAuthorize("isAuthenticated()")
 public class UserResource {
-
-    @ResponseStatus(HttpStatus.NOT_FOUND) // Or @ResponseStatus(HttpStatus.NO_CONTENT)
-    private static class UserResourceException extends RuntimeException {
-        private UserResourceException(String message) {
-            super(message);
-        }
-    }
 
     private static final Logger log = LoggerFactory.getLogger(UserResource.class);
 
@@ -60,6 +52,12 @@ public class UserResource {
     public UserResource(UserService userService, MailService mailService) {
         this.userService = userService;
         this.mailService = mailService;
+    }
+
+    public record LoginUpdateDTO(String login) {
+    }
+
+    public record EmailUpdateDTO(String email) {
     }
 
     /**
@@ -101,10 +99,7 @@ public class UserResource {
     @GetMapping("/activate")
     public void activateUser(@RequestParam(value = "key") String key) {
         log.debug("REST request to activate User's email");
-        Optional<User> user = userService.activateRegistration(key);
-        if (!user.isPresent()) {
-            throw new UserResourceException("No user was found for this activation key");
-        }
+        userService.activateRegistration(key);
     }
 
     /**
@@ -118,6 +113,40 @@ public class UserResource {
     public void changePassword(@RequestBody PasswordChangeDTO passwordChangeDto) {
         log.debug("REST request to change User's password : {}", passwordChangeDto);
         userService.changePassword(passwordChangeDto.currentPassword(), passwordChangeDto.newPassword());
+    }
+
+    /**
+     * REST endpoint to update the current user's email address.
+     *
+     * @param emailUpdateDTO DTO containing the new email address
+     * @return ResponseEntity with the updated UserDTO
+     * @throws EmailAlreadyUsedException If the email is already registered by
+     *                                   another user
+     * @throws UserNotFoundException     If no user is found for the current
+     *                                   authentication context
+     */
+    @PostMapping("/update-email")
+    public ResponseEntity<UserDTO> updateEmail(@RequestBody EmailUpdateDTO emailUpdateDTO) {
+        log.debug("REST request to update User's email : {}", emailUpdateDTO.email());
+        User user = userService.updateEmail(emailUpdateDTO.email());
+        return ResponseEntity.ok(UserDTO.from(user));
+    }
+
+    /**
+     * REST endpoint to update the current user's login.
+     *
+     * @param loginUpdateDTO DTO containing the new login
+     * @return ResponseEntity with the updated UserDTO
+     * @throws LoginAlreadyUsedException If the login is already taken by another
+     *                                   user
+     * @throws UserNotFoundException     If no user is found for the current
+     *                                   authentication context
+     */
+    @PostMapping("/update-login")
+    public ResponseEntity<UserDTO> updateLogin(@RequestBody LoginUpdateDTO loginUpdateDTO) {
+        log.debug("REST request to update User's login : {}", loginUpdateDTO.login());
+        User user = userService.updateLogin(loginUpdateDTO.login());
+        return ResponseEntity.ok(UserDTO.from(user));
     }
 
     /**

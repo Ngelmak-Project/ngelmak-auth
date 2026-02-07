@@ -120,7 +120,7 @@ public class UserService {
      * @param key Unique activation key
      * @return Optional of activated User
      */
-    public Optional<User> activateRegistration(String key) {
+    public User activateRegistration(String key) {
         log.debug("Activating user for activation key {}", key);
         return userRepository
                 .findOneByActivationKey(key)
@@ -129,7 +129,7 @@ public class UserService {
                     user.setActivationKey(null);
                     log.debug("Activated user: {}", user);
                     return user;
-                }).map(userRepository::save);
+                }).map(userRepository::save).orElseThrow(UserNotFoundException::new);
     }
 
     /**
@@ -213,6 +213,60 @@ public class UserService {
     }
 
     /**
+     * Updates the login for the currently authenticated user.
+     *
+     * @param login The new login to be set for the user
+     * @return The updated User entity with the new login
+     * @throws LoginAlreadyUsedException If the login is already taken by another
+     *                                   user
+     * @throws UserNotFoundException     If no user is found for the current
+     *                                   authentication context
+     */
+    @Transactional
+    public User updateLogin(String login) {
+        log.debug("Request update User's login : {}", login);
+        return getUserWithAuthorities().map(UserPrincipal::id)
+                .flatMap(userRepository::findById)
+                .map(existingUser -> {
+                    // Check if login is already taken
+                    if (userRepository.findOneByLogin(login.toLowerCase()).isPresent()) {
+                        throw new LoginAlreadyUsedException();
+                    }
+                    // Set login (converted to lowercase to ensure uniqueness)
+                    existingUser.setLogin(login.toLowerCase());
+                    log.debug("Changed login for User: {}", existingUser);
+                    return existingUser;
+                }).orElseThrow(UserNotFoundException::new);
+    }
+
+    /**
+     * Updates the email address for the currently authenticated user.
+     *
+     * @param email The new email address to be set for the user
+     * @return The updated User entity with the new email address
+     * @throws EmailAlreadyUsedException If the email is already registered by
+     *                                   another user
+     * @throws UserNotFoundException     If no user is found for the current
+     *                                   authentication context
+     */
+    @Transactional
+    public User updateEmail(String email) {
+        log.debug("Request update User's email : {}", email);
+        return getUserWithAuthorities().map(UserPrincipal::id)
+                .flatMap(userRepository::findById)
+                .map(existingUser -> {
+                    // Check if email is already registered
+                    if (userRepository.findOneByEmailIgnoreCase(email).isPresent()) {
+                        throw new EmailAlreadyUsedException();
+                    }
+                    // Set email (converted to lowercase to ensure uniqueness)
+                    existingUser.setEmail(email.toLowerCase());
+                    log.debug("Changed password for User: {}", existingUser);
+                    return existingUser;
+                }).orElseThrow(UserNotFoundException::new);
+    }
+
+    /**
      * Registers a new user in the system.
      *
      * <p>
@@ -251,6 +305,8 @@ public class UserService {
         String encryptedPassword = passwordEncoder.encode(userDTO.password());
         // Set login (converted to lowercase to ensure uniqueness)
         newUser.setLogin(userDTO.login().toLowerCase());
+        // Set email (converted to lowercase to ensure uniqueness)
+        newUser.setEmail(userDTO.email().toLowerCase());
         // Set encrypted password
         newUser.setPassword(encryptedPassword);
         // Initially set user as inactive
@@ -401,12 +457,6 @@ public class UserService {
         return userRepository.findAll(pageable).map(UserDTO::from);
     }
 
-    // @Transactional(readOnly = true)
-    // public Optional<User> getUserWithAuthorities() {
-    // return
-    // SecurityUtils.getCurrentUserLogin().flatMap(userRepository::findOneWithAuthoritiesByLogin);
-    // }
-
     /**
      * Not activated users should be automatically deleted after 3 days.
      * <p>
@@ -432,30 +482,4 @@ public class UserService {
     public List<String> getAuthorities() {
         return authorityRepository.findAll().stream().map(Authority::getName).toList();
     }
-
-    /**
-     * Save or update user image.
-     *
-     * @param attachment the entity to save.
-     * @return the persisted entity.
-     */
-    // public Optional<RegisterRequestDTO> upload(MultipartFile file) {
-    // log.debug("Request to update user image");
-    // return this.getUserWithAuthorities().map(
-    // user -> {
-    // /**
-    // * By default, user profile images are downloaded to the public directory,
-    // allowing access without authentication.
-    // * Then we get for instance /public/images/ngelmak/ngelmak-log.jpg
-    // */
-    // String[] dirs = { "media", "user" };
-    // URL url = fileStorageService.store(file, true, file.getOriginalFilename(),
-    // dirs);
-    // user.setImageUrl(url.toString());
-    // userRepository.save(user);
-    // log.debug("Changed Information for User: {}", user);
-    // return user;
-    // })
-    // .map(RegisterRequestDTO::new);
-    // }
 }
