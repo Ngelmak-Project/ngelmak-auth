@@ -37,8 +37,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByCertificationStatusAndCreatedDateBefore(CertificationStatus status, Instant dateTime);
 
     @Modifying
-    @Query("DELETE FROM User u WHERE u.createdDate < :dateTime AND u.certifiedDate = false")
-    int deleteUnCertifiedUsersBeforeDate(@Param("dateTime") Instant dateTime);
+    @Query("DELETE FROM User u WHERE u.createdDate < :dateTime AND u.certificationStatus = :status")
+    int deleteUnCertifiedUsersBeforeDate(@Param("dateTime") Instant dateTime, @Param("status") CertificationStatus status);
 
     @EntityGraph(attributePaths = "authorities")
     Optional<User> findOneWithAuthoritiesById(Long id);
