@@ -50,6 +50,7 @@ public class User implements Serializable {
     @Pattern(regexp = Constants.LOGIN_REGEX)
     @Size(min = 1, max = 50)
     @Column(length = 50, unique = true, nullable = false)
+    // The username/login of the user, which must be unique.
     private String login;
 
     @JsonIgnore
@@ -66,15 +67,33 @@ public class User implements Serializable {
     @Column(name = "last_name", length = 50)
     private String lastName;
 
+    /**
+     * The user's email address, which can be used for account activation, password
+     * reset, and notifications.
+     */
     @Email
     @Size(min = 5, max = 254)
-    @Column(length = 254, unique = true)
+    @Column(length = 254, nullable = true)
     private String email;
 
+    /*
+     * If the user has activated their account via email confirmation.
+     */
     @NotNull
     @Column(nullable = false)
     private boolean activated = false;
 
+    /*
+     * If the user account is blocked due to too many failed login attempts or
+     * admin.
+     */
+    @NotNull
+    @Column(nullable = false)
+    private boolean blocked = false;
+
+    /*
+     * For storing the user's preferred language, e.g. "en", "fr", "es"
+     */
     @Size(min = 2, max = 5)
     @Column(name = "lang_key", length = 5)
     private String langKey;
@@ -83,14 +102,15 @@ public class User implements Serializable {
     @Column(name = "image_url", length = 256)
     private String imageUrl;
 
+    /* Used for email activation and password reset. */
+    @JsonIgnore
     @Size(max = 20)
     @Column(name = "activation_key", length = 20)
-    @JsonIgnore
     private String activationKey;
 
+    @JsonIgnore
     @Size(max = 20)
     @Column(name = "reset_key", length = 20)
-    @JsonIgnore
     private String resetKey;
 
     @JsonIgnore
@@ -104,23 +124,57 @@ public class User implements Serializable {
     @Column(name = "created_date")
     private Instant createdDate = null;
 
+    @Column(name = "deleted_date")
+    private Instant deletedDate = null;
+
     @JsonIgnore
     @Column(name = "certified_date")
     private Instant certifiedDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "certification_status")
-    private CertificationStatus certificationStatus = null;
+    @Column(name = "certification_status", length = 20)
+    private CertificationStatus certificationStatus = CertificationStatus.NOT_REQUESTED;
 
+    /*
+     * Type of document provided for certification, e.g. PASSPORT, ID_CARD,
+     * DRIVER_LICENSE.
+     */
     @JsonIgnore
     @Enumerated(EnumType.STRING)
     @Column(name = "doc_type")
     private DocType docType;
 
+    /*
+     * A hash of the document ID provided for certification. This is stored as a
+     * hash for security reasons, so that even if the database is compromised, the
+     * actual document IDs cannot be easily retrieved.
+     */
     @JsonIgnore
     @Column(name = "doc_id_hash", length = 60)
     private String docId;
 
+    /*
+     * User's preferred timezone, e.g. "America/New_York", "Europe/Paris". This can
+     * be used to display dates/times in the user's local time and for scheduling
+     * notifications or events at the correct time for the user.
+     */
+    @Column(name = "timezone")
+    @Size(max = 50)
+    private String timezone;
+
+    /*
+     * Whether the user has enabled dark mode in their preferences. This can be used
+     * to customize the UI theme for the user.
+     */
+    @Column(name = "dark_mode_enabled")
+    private Boolean darkModeEnabled = false;
+
+    /*
+     * The authorities/roles that are assigned to the user. This is a many-to-many
+     * relationship because a user can have multiple roles and a role can be
+     * assigned
+     * to multiple users.
+     */
     @JsonIgnore
     @ManyToMany(cascade = CascadeType.REMOVE)
     @JoinTable(name = "nk_user_authority", joinColumns = {
@@ -234,6 +288,14 @@ public class User implements Serializable {
         this.createdDate = createdDate;
     }
 
+    public Instant getDeletedDate() {
+        return deletedDate;
+    }
+
+    public void setDeletedDate(Instant deletedDate) {
+        this.deletedDate = deletedDate;
+    }
+
     public String getActivationKey() {
         return activationKey;
     }
@@ -270,8 +332,24 @@ public class User implements Serializable {
         return activated;
     }
 
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public void setBlocked(boolean blocked) {
+        this.blocked = blocked;
+    }
+
     public void setActivated(boolean activated) {
         this.activated = activated;
+    }
+
+    public boolean isDarkModeEnabled() {
+        return darkModeEnabled;
+    }
+
+    public void setDarkModeEnabled(boolean darkModeEnabled) {
+        this.darkModeEnabled = darkModeEnabled;
     }
 
     public Set<Authority> getAuthorities() {

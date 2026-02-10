@@ -1,6 +1,5 @@
 package org.ngelmakproject.domain.enumeration;
 
 public enum DocType {
-  NATIONAL_ID_CARD,
-  PASSPORT;
+  PASSPORT, ID_CARD, DRIVER_LICENSE, OTHER;
 }

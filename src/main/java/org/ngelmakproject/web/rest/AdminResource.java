@@ -2,22 +2,26 @@ package org.ngelmakproject.web.rest;
 
 import java.util.concurrent.TimeUnit;
 
+import org.ngelmakproject.domain.User;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.AuthoritiesConstants;
-import org.ngelmakproject.service.MailService;
-import org.ngelmakproject.service.UserService;
+import org.ngelmakproject.service.AdminService;
+import org.ngelmakproject.web.rest.dto.ActiveUserDTO;
+import org.ngelmakproject.web.rest.dto.CertificationDTO;
 import org.ngelmakproject.web.rest.dto.PageDTO;
-import org.ngelmakproject.web.rest.dto.UserDTO;
+import org.ngelmakproject.web.rest.util.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,14 +48,12 @@ public class AdminResource {
 	@Value("${spring.application.name}")
 	private String applicationName;
 
-	private final UserService userService;
+	private final AdminService adminService;
 	private final UserRepository userRepository;
-	private final MailService mailService;
 
-	public AdminResource(UserService userService, UserRepository userRepository, MailService mailService) {
-		this.userService = userService;
+	public AdminResource(AdminService adminService, UserRepository userRepository) {
+		this.adminService = adminService;
 		this.userRepository = userRepository;
-		this.mailService = mailService;
 	}
 
 	/**
@@ -63,10 +65,11 @@ public class AdminResource {
 	 *         all users.
 	 */
 	@GetMapping("/users")
-	public ResponseEntity<PageDTO<UserDTO>> getAllUsers(Pageable pageable) {
+	public ResponseEntity<PageDTO<User>> getAllUsers(Pageable pageable) {
 		log.debug("REST request to get all User for an admin");
+		Page<User> page = userRepository.findAll(pageable);
 		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
-				.body(new PageDTO<>(userService.getAllManagedUsers(pageable)));
+				.body(PageDTO.from(page));
 	}
 
 	/**
@@ -76,28 +79,48 @@ public class AdminResource {
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
 	 *         the "login" user, or with status {@code 404 (Not Found)}.
 	 */
-	// @GetMapping("/users/{login}")
-	// @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-	// public ResponseEntity<UserDTO> getUser(
-	// @PathVariable("login") @Pattern(regexp = Constants.LOGIN_REGEX) String login)
-	// {
-	// log.debug("REST request to get User : {}", login);
-	// return
-	// ResponseUtil.wrapOrNotFound(userService.getUserWithAuthoritiesByLogin(login).map(UserDTO::new));
-	// }
+	@GetMapping("/users/{id}")
+	public ResponseEntity<User> getUser(
+			@PathVariable("id") Long id) {
+		log.debug("REST request to get User : {}", id);
+		return ResponseUtil.wrapOrNotFound(userRepository.findOneWithAuthoritiesById(id));
+	}
 
 	/**
-	 * {@code DELETE /admin/users/:id} : delete the "id" User.
+	 * {@code PUT /admin/users/active} : change the active status of the user.
 	 *
-	 * @param id the id of the user to delete.
+	 * @param activeUserDTO the id and the new active status of the user.
+	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
+	 *         the updated user.
+	 */
+	@PutMapping("/users/active")
+	public ResponseEntity<User> setActive(@RequestBody ActiveUserDTO activeUserDTO) {
+		log.debug("REST request to change active status of User : {} to {}", activeUserDTO.id(), activeUserDTO.isActive());
+		return ResponseEntity.ok(adminService.setActive(activeUserDTO.id(), activeUserDTO.isActive()));
+	}
+
+	/**
+	 * {@code PUT /admin/users/block/:id} : block the user with the given id.
+	 *
+	 * @param login the login of the user to delete.
 	 * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
 	 */
-	@DeleteMapping("/users/{id}")
-	public ResponseEntity<Void> deleteUser(
-			@PathVariable("id") Long id) {
-		log.debug("REST request to delete User: {}", id);
-		// userService.deleteUser(id);
-		return ResponseEntity.noContent().build();
+	@PutMapping("/users/block/{id}")
+	public ResponseEntity<User> blockUser(@PathVariable("id") Long id) {
+		log.debug("REST request to block User : {}", id);
+		return ResponseEntity.ok(adminService.updateBlockStatus(id, true));
+	}
+
+	/**
+	 * {@code PUT /admin/users/unblock/:id} : unblock the user with the given id.
+	 *
+	 * @param login the login of the user to delete.
+	 * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
+	 */
+	@PutMapping("/users/unblock/{id}")
+	public ResponseEntity<User> unblockUser(@PathVariable("id") Long id) {
+		log.debug("REST request to unblock User : {}", id);
+		return ResponseEntity.ok(adminService.updateBlockStatus(id, false));
 	}
 
 	/**
@@ -107,45 +130,22 @@ public class AdminResource {
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
 	 *         the account just certified.
 	 */
-	// @PutMapping("/users/certification")
-	// @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-	// public ResponseEntity<UserDTO> certification(
-	// @Valid @RequestBody AccountCertificationRequestDTO requestDTO) {
-	// log.debug("REST request to certify User : {}", requestDTO);
-	// return ResponseUtil.wrapOrNotFound(userService.certificate(requestDTO));
-	// }
+	@PutMapping("/users/certification")
+	public ResponseEntity<User> certificateUser(@RequestBody CertificationDTO certificationDTO) {
+		log.debug("REST request to certify User : {}", certificationDTO);
+		return ResponseEntity.ok(adminService.certificate(certificationDTO));
+	}
 
 	/**
-	 * {@code Put /admin/users/certification} : requestion
-	 * certification for a user account.
+	 * {@code Put /admin/users/certification/withdrawal} : withdrawal certification
+	 * for a user account.
 	 *
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
-	 *         the account just certified.
+	 *         the account just withdrawn.
 	 */
-	// @PutMapping("/users/certification-withdrawal/{login}")
-	// @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-	// public ResponseEntity<UserDTO> certificationWithdrawal(
-	// @PathVariable("login") String login) {
-	// log.debug("REST request to withdraw certification User : {}", login);
-	// return
-	// ResponseUtil.wrapOrNotFound(userService.certificationWithdrawal(login));
-	// }
-
-	/**
-	 * {@code Put /admin/users/certification/:login} : requestion
-	 * certification for a user account.
-	 *
-	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
-	 *         user certification details.
-	 */
-	// @GetMapping("/users/certification/{login}")
-	// @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
-	// public ResponseEntity<AccountCertificationRequestDTO>
-	// getAccountCertification(
-	// @PathVariable("login") String login) {
-	// log.debug("REST request to get account certification of User : {}", login);
-	// return
-	// ResponseUtil.wrapOrNotFound(userService.getAccountCertification(login));
-	// }
-
+	@PutMapping("/users/certification/withdrawal/{id}")
+	public ResponseEntity<User> certificationWithdrawal(@PathVariable("id") Long id) {
+		log.debug("REST request to withdraw certification of User : {}", id);
+		return ResponseEntity.ok(adminService.certificationWithdrawal(id));
+	}
 }

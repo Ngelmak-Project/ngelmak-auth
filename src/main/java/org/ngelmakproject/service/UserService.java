@@ -8,10 +8,12 @@ import java.util.Set;
 
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.User;
+import org.ngelmakproject.domain.enumeration.CertificationStatus;
 import org.ngelmakproject.repository.AuthorityRepository;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.AuthoritiesConstants;
 import org.ngelmakproject.security.UserPrincipal;
+import org.ngelmakproject.web.rest.dto.CertificationDTO;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
 import org.ngelmakproject.web.rest.dto.UserUpdateDTO;
@@ -354,6 +356,9 @@ public class UserService {
                     if (userUpdateDTO.langKey() != null) {
                         existingUser.setLangKey(userUpdateDTO.langKey());
                     }
+                    if (userUpdateDTO.darkModeEnabled() != null) {
+                        existingUser.setDarkModeEnabled(userUpdateDTO.darkModeEnabled());
+                    }
                     // Save and return the updated user
                     return existingUser;
                 })
@@ -379,107 +384,30 @@ public class UserService {
                     log.debug("Deleted User: {}", user);
                 });
     }
+
     /**
-     * Request for account certification.
+     * Requests certification for a user account.
      *
-     * @param requestDTO user to update.
-     * @return updated user.
-     */
-    // public Optional<RegisterRequestDTO>
-    // certificationRequest(AccountCertificationRequestDTO requestDTO) {
-    // return this.getUserWithAuthorities().map(
-    // user -> {
-    // user.setCertificationStatus(CertificationStatus.REQUESTED);
-    // user.setDocType(requestDTO.getDocType());
-    // user.setDocId(requestDTO.getDocId());
-    // userRepository.save(user);
-    // log.debug("Changed Information for User: {}", user);
-    // return user;
-    // })
-    // .map(RegisterRequestDTO::new);
-    // }
-
-    /**
-     * Certificate user account.
-     *
-     * @param requestDTO user to update.
-     * @return updated user.
-     */
-    // public Optional<RegisterRequestDTO>
-    // certificate(AccountCertificationRequestDTO requestDTO) {
-    // CertificationStatus[] status = { CertificationStatus.REJECTED,
-    // CertificationStatus.REQUESTED };
-    // return
-    // this.userRepository.findOneByDocIdAndCertificationStatusIn(requestDTO.getDocId(),
-    // status).map(
-    // user -> {
-    // user.setDocId(
-    // passwordEncoder.encode(requestDTO.getDocId()));
-    // user.setCertificationStatus(CertificationStatus.CERTIFIED);
-    // user.setDocType(requestDTO.getDocType());
-    // user.setCertifiedDate(Instant.now());
-    // userRepository.save(user);
-    // log.debug("Changed Information for User: {}", user);
-    // return user;
-    // })
-    // .map(RegisterRequestDTO::new);
-    // }
-
-    /**
-     * Withdraw certification for the given user login.
-     *
-     * @param login user to update.
-     * @return updated user.
-     */
-    // public Optional<RegisterRequestDTO> certificationWithdrawal(String login) {
-    // return this.userRepository.findOneByLoginAndCertificationStatus(login,
-    // CertificationStatus.CERTIFIED).map(
-    // user -> {
-    // user.setDocId("");
-    // user.setCertificationStatus(CertificationStatus.REJECTED);
-    // user.setCertifiedDate(null);
-    // userRepository.save(user);
-    // log.debug("Changed Information for User: {}", user);
-    // return user;
-    // })
-    // .map(RegisterRequestDTO::new);
-    // }
-
-    // @Transactional(readOnly = true)
-    // public Optional<AccountCertificationRequestDTO>
-    // getAccountCertification(String login) {
-    // return
-    // this.userRepository.findOneByLogin(login.toLowerCase()).map(AccountCertificationRequestDTO::new);
-    // }
-
-    @Transactional(readOnly = true)
-    public Page<UserDTO> getAllManagedUsers(Pageable pageable) {
-        return userRepository.findAll(pageable).map(UserDTO::from);
-    }
-
-    /**
-     * Not activated users should be automatically deleted after 3 days.
      * <p>
-     * This is scheduled to get fired everyday, at 01:00 (am).
+     * This method updates the user's certification status to PENDING and saves
+     * the provided documentation details. The actual certification process (e.g.,
+     * admin review) is expected to be handled separately.
+     *
+     * @param certificationDTO the DTO containing user ID and certification details
      */
-    @Scheduled(cron = "0 0 1 * * ?")
-    public void removeNotActivatedUsers() {
+    public void requestForCertification(CertificationDTO certificationDTO) {
         userRepository
-                .findAllByActivatedIsFalseAndActivationKeyIsNotNullAndCreatedDateBefore(
-                        Instant.now().minus(3, ChronoUnit.DAYS))
-                .forEach(user -> {
-                    log.debug("Deleting not activated user {}", user.getLogin());
-                    userRepository.delete(user);
-                });
+                .findById(certificationDTO.id())
+                .map(user -> {
+                    // [TODO] Save the certification request into a separate table for auditing and
+                    // tracking.
+                    log.debug("Received certification request for User: {}", user);
+                    user.setDocType(certificationDTO.docType());
+                    user.setDocId(certificationDTO.docIdentification());
+                    user.setCertificationStatus(CertificationStatus.PENDING);
+                    return user;
+                })
+                .ifPresent(userRepository::save);
     }
 
-    /**
-     * Gets a list of all the authorities.
-     * 
-     * @return a list of all the authorities.
-     */
-    @Transactional(readOnly = true)
-    public List<String> getAuthorities() {
-        return authorityRepository.findAll().stream().map(Authority::getName).toList();
-    }
 }
