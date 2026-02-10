@@ -67,7 +67,7 @@ public class AdminResource {
 	@GetMapping("/users")
 	public ResponseEntity<PageDTO<User>> getAllUsers(Pageable pageable) {
 		log.debug("REST request to get all User for an admin");
-		Slice<User> page = userRepository.findAll(pageable);
+		Slice<User> page = userRepository.findAllWithAuthorities(pageable);
 		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
 				.body(PageDTO.from(page));
 	}
