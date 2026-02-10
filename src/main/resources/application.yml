@@ -35,7 +35,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: none # Use application-bootstrap.yml for updating the database schema
+      ddl-auto: update # Use application-bootstrap.yml for updating the database schema
 
   liquibase:
     enabled: false
