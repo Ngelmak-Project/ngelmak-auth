@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.domain.enumeration.CertificationStatus;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -34,7 +35,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @EntityGraph(attributePaths = "authorities")
     @Query("SELECT u FROM User u")
-    Slice<User> findAllWithAuthorities(Pageable pageable);
+    Page<User> findAllWithAuthorities(Pageable pageable);
 
     // Method to find non-activated users created before a certain date
     List<User> findAllByActivatedIsFalseAndActivationKeyIsNotNullAndCreatedDateBefore(Instant dateTime);

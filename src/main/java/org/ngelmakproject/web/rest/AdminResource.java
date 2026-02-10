@@ -13,6 +13,7 @@ import org.ngelmakproject.web.rest.util.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.http.CacheControl;
@@ -67,7 +68,7 @@ public class AdminResource {
 	@GetMapping("/users")
 	public ResponseEntity<PageDTO<User>> getAllUsers(Pageable pageable) {
 		log.debug("REST request to get all User for an admin");
-		Slice<User> page = userRepository.findAllWithAuthorities(pageable);
+		Page<User> page = userRepository.findAllWithAuthorities(pageable);
 		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
 				.body(PageDTO.from(page));
 	}
