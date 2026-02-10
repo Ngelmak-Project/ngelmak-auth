@@ -141,7 +141,7 @@ public class User implements Serializable {
      */
     @JsonIgnore
     @Enumerated(EnumType.STRING)
-    @Column(name = "doc_type")
+    @Column(name = "doc_type", length = 20)
     private DocType docType;
 
     /*
