@@ -7,16 +7,17 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.ngelmakproject.domain.Authority;
+import org.ngelmakproject.domain.AuthorityRequest;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.domain.enumeration.CertificationStatus;
-import org.ngelmakproject.repository.AuthorityRepository;
+import org.ngelmakproject.repository.AuthorityRequestRepository;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.AuthoritiesConstants;
 import org.ngelmakproject.security.UserPrincipal;
 import org.ngelmakproject.web.rest.dto.CertificationDTO;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
-import org.ngelmakproject.web.rest.dto.UserDTO;
 import org.ngelmakproject.web.rest.dto.UserUpdateDTO;
+import org.ngelmakproject.web.rest.errors.AuthorityNotFoundException;
 import org.ngelmakproject.web.rest.errors.EmailAlreadyUsedException;
 import org.ngelmakproject.web.rest.errors.InvalidPasswordException;
 import org.ngelmakproject.web.rest.errors.LoginAlreadyUsedException;
@@ -24,8 +25,6 @@ import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.ngelmakproject.web.rest.util.RandomUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -44,16 +43,16 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
+    private final AuthorityRequestRepository authorityRequestRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuthorityRepository authorityRepository;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            AuthorityRepository authorityRepository) {
+            AuthorityRequestRepository authorityRequestRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.authorityRequestRepository = authorityRequestRepository;
         this.passwordEncoder = passwordEncoder;
-        this.authorityRepository = authorityRepository;
     }
 
     /**
@@ -231,7 +230,7 @@ public class UserService {
                 .flatMap(userRepository::findById)
                 .map(existingUser -> {
                     // Check if login is already taken
-                    if (userRepository.findOneByLogin(login.toLowerCase()).isPresent()) {
+                    if (userRepository.findOneByLoginIgnoreCase(login.toLowerCase()).isPresent()) {
                         throw new LoginAlreadyUsedException();
                     }
                     // Set login (converted to lowercase to ensure uniqueness)
@@ -292,7 +291,7 @@ public class UserService {
         log.debug("Request to register a new User : {}", userDTO);
 
         // Check if login is already taken
-        if (userRepository.findOneByLogin(userDTO.login().toLowerCase()).isPresent()) {
+        if (userRepository.findOneByLoginIgnoreCase(userDTO.login().toLowerCase()).isPresent()) {
             throw new LoginAlreadyUsedException();
         }
 
@@ -366,23 +365,92 @@ public class UserService {
                 .orElseThrow(UserNotFoundException::new);
     }
 
-    @Scheduled(cron = "0 0 3 * * *") // every day at 3 AM
-    private void removeNonActivatedUser(User existingUser) {
-        // if (existingUser.isActivated()) {
-        // return false;
-        // }
-        // userRepository.delete(existingUser);
-        // userRepository.flush();
-        // return true;
+    /**
+     * Marks a user for deletion by setting a deletion timestamp.
+     *
+     * <p>
+     * This method does not immediately delete the user from the database. Instead,
+     * it sets a deletion timestamp, which can be used by a scheduled task to
+     * perform actual deletion after a certain grace period. This approach allows
+     * for potential recovery of user accounts and ensures that any related data can
+     * be handled appropriately before permanent deletion.
+     *
+     * @param id the ID of the user to be marked for deletion
+     */
+    public void deleteUser(Long id) {
+        userRepository
+                .markForDeletion(id, Instant.now());
     }
 
-    public void deleteUser(String login) {
-        userRepository
-                .findOneByLogin(login)
-                .ifPresent(user -> {
-                    userRepository.delete(user);
-                    log.debug("Deleted User: {}", user);
-                });
+    /**
+     * Scheduled task to permanently delete users that have been marked for deletion
+     * and have exceeded the grace period.
+     *
+     * <p>
+     * This method runs at a fixed interval (e.g., daily) and checks for users that
+     * have a deletion timestamp older than a specified cutoff date (e.g., 30 days).
+     * It then permanently deletes those users from the database. This ensures that
+     * user accounts are not immediately removed, allowing for potential recovery if
+     * needed.
+     */
+    @Scheduled(cron = "0 0 3 * * ?") // Every day at 3 AM
+    public void removeDeletedUsers() {
+        Instant cutoffDate = Instant.now().minus(30, ChronoUnit.DAYS);
+        List<Long> ids = userRepository.findIdsByDeletedDateBefore(cutoffDate);
+        if (!ids.isEmpty()) {
+            log.debug("Deleting users with IDs: {}", ids);
+            userRepository.deleteAllById(ids);
+        }
+    }
+
+    public User requestAuthority(String authorityName) {
+        return this.getUserWithAuthorities()
+                .map(UserPrincipal::id)
+                .flatMap(userRepository::findById)
+                .map(existingUser -> {
+                    var authority = new Authority();
+                    authority.setName(authorityName);
+                    existingUser.getAuthorities().add(authority);
+                    log.debug("Requested authority {} for User: {}", authorityName, existingUser);
+                    return existingUser;
+                })
+                .map(userRepository::save)
+                .orElseThrow(UserNotFoundException::new);
+    }
+
+    /**
+     * Requests a new authority for the currently authenticated user with a provided
+     * motivation.
+     * This method creates a new AuthorityRequest entity that captures the user's
+     * request for a specific authority along with their motivation. The request is
+     * then saved to the database for further processing (e.g., admin review).
+     * 
+     * @param authorityName the name of the authority being requested.
+     * @param motivation    the user's motivation for requesting the authority.
+     * @return the created AuthorityRequest entity representing the user's request.
+     * @throws AuthorityNotFoundException if the specified authority does not exist
+     *                                    in the system.
+     * @throws UserNotFoundException      if no user is found for the current
+     *                                    authentication context.
+     */
+    public AuthorityRequest requestAuthority(String authorityName, String motivation) {
+        User user = this.profile();
+        Authority authority = AuthoritiesConstants.getAuthorities().stream()
+                .filter(auth -> auth.equalsIgnoreCase(authorityName))
+                .findFirst()
+                .map(name -> {
+                    Authority auth = new Authority();
+                    auth.setName(name);
+                    return auth;
+                })
+                .orElseThrow(() -> new AuthorityNotFoundException(authorityName));
+        AuthorityRequest authorityRequest = new AuthorityRequest();
+        authorityRequest.setUser(user); // Set the user making the request.
+        authorityRequest.setMotivation(motivation);
+        authorityRequest.setAuthority(authority);
+        authorityRequest.setDecidedAt(Instant.now());
+        authorityRequest = authorityRequestRepository.save(authorityRequest);
+        return authorityRequest;
     }
 
     /**

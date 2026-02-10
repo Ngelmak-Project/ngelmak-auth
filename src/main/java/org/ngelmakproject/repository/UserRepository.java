@@ -25,12 +25,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
     String USERS_BY_LOGIN_CACHE = "usersByLogin";
 
     String USERS_BY_EMAIL_CACHE = "usersByEmail";
+
     Optional<User> findOneByActivationKey(String activationKey);
+
     Optional<User> findOneByResetKey(String resetKey);
+
     Optional<User> findOneByEmailIgnoreCase(String email);
-    Optional<User> findOneByLogin(String login);
+
+    Optional<User> findOneByLoginIgnoreCase(String login);
+
     Optional<User> findOneByDocId(String docId);
+
     Optional<User> findOneByDocIdAndCertificationStatusIn(String docId, CertificationStatus[] status);
+
     Optional<User> findOneByLoginAndCertificationStatus(String docId, CertificationStatus status);
 
     @EntityGraph(attributePaths = "authorities")
@@ -45,7 +52,27 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Modifying
     @Query("DELETE FROM User u WHERE u.createdDate < :dateTime AND u.certificationStatus = :status")
-    int deleteUnCertifiedUsersBeforeDate(@Param("dateTime") Instant dateTime, @Param("status") CertificationStatus status);
+    int deleteUnCertifiedUsersBeforeDate(@Param("dateTime") Instant dateTime,
+            @Param("status") CertificationStatus status);
+
+    /**
+     * Marks a user for deletion by setting the deletedDate field. This method
+     * performs a soft delete by updating the user's deletedDate instead of removing
+     * the record from the database.
+     * 
+     * @param id       The ID of the user to mark for deletion
+     * @param dateTime The timestamp to set as the deletedDate for the user
+     * @return The number of records updated (should be 1 if the user was
+     *         successfully marked for deletion, or 0 if the user was already marked
+     *         as deleted or does not exist)
+     */
+    @Modifying
+    @Query("UPDATE User u SET u.deletedDate = :dateTime WHERE u.id = :id")
+    int markForDeletion(@Param("id") Long id, @Param("dateTime") Instant dateTime);
+
+    // Method to find user IDs that are marked for deletion before a certain date.
+    @Query("SELECT u.id FROM User u WHERE u.deletedDate < :dateTime")
+    List<Long> findIdsByDeletedDateBefore(@Param("dateTime") Instant dateTime);
 
     @EntityGraph(attributePaths = "authorities")
     Optional<User> findOneWithAuthoritiesById(Long id);

@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.JwtUtil;
 import org.ngelmakproject.web.rest.dto.LoginRequestDTO;
+import org.ngelmakproject.web.rest.errors.UserBlockedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ public class AuthenticateService {
      * This method performs the following key operations:
      * <ul>
      * <li>Looks up user by username</li>
+     * <li>Ensures user is not blocked</li>
      * <li>Verifies password using secure password matching</li>
      * <li>Generates either a standard or remember-me JWT token</li>
      * </ul>
@@ -51,7 +53,14 @@ public class AuthenticateService {
         log.debug("Request to authenticate a User : {}", loginRequestDTO);
 
         // Complex authentication flow using method chaining
-        Optional<String> token = userRepository.findOneByLogin(loginRequestDTO.login())
+        Optional<String> token = userRepository.findOneByLoginIgnoreCase(loginRequestDTO.login())
+                .map(u -> {
+                    // Check if the user account is blocked before proceeding.
+                    if (u.isBlocked()) {
+                        throw new UserBlockedException();
+                    }
+                    return u;
+                })
                 // Filter: Verify password using secure encoder
                 .filter(u -> passwordEncoder.matches(loginRequestDTO.password(), u.getPassword()))
                 // Map: Generate token based on remember-me preference

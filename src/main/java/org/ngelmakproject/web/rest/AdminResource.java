@@ -1,5 +1,6 @@
 package org.ngelmakproject.web.rest;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.ngelmakproject.domain.User;
@@ -15,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,6 +48,14 @@ public class AdminResource {
 
 	@Value("${spring.application.name}")
 	private String applicationName;
+
+	// DTO for handling granting/revoking authorities
+	private record GrantAuthorityDTO(Long id, Set<String> authorityNames, String reason) {
+	}
+
+	// DTO for handling authority requests
+	public record AuthorityRequestDTO(Long id, boolean approve, String reason) {
+	}
 
 	private final AdminService adminService;
 	private final UserRepository userRepository;
@@ -98,6 +106,56 @@ public class AdminResource {
 	public ResponseEntity<User> setActive(@RequestBody ActiveUserDTO activeUserDTO) {
 		log.debug("REST request to change active status of User : {} to {}", activeUserDTO.id(), activeUserDTO.isActive());
 		return ResponseEntity.ok(adminService.setActive(activeUserDTO.id(), activeUserDTO.isActive()));
+	}
+
+	/**
+	 * {@code PUT /admin/users/grant-authorities} : grant authorities to a user.
+	 *
+	 * @param id             of the user to update
+	 * @param authorityNames the names of the authorities to grant
+	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
+	 *         the updated user.
+	 */
+	@PutMapping("/users/grant-authorities")
+	public ResponseEntity<User> grantAuthorities(@RequestBody GrantAuthorityDTO grantAuthorityDTO) {
+		log.debug("REST request to grant authorities {} to User : {} with reason {}", grantAuthorityDTO.authorityNames(),
+				grantAuthorityDTO.id(), grantAuthorityDTO.reason());
+		return ResponseEntity.ok(adminService.grantAuthorities(grantAuthorityDTO.id(), grantAuthorityDTO.authorityNames(),
+				grantAuthorityDTO.reason()));
+	}
+
+	/**
+	 * {@code PUT /admin/users/revoke-authorities} : revoke authorities from a user.
+	 *
+	 * @param id             of the user to update
+	 * @param authorityNames the names of the authorities to revoke
+	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
+	 *         the updated user.
+	 */
+	@PutMapping("/users/revoke-authorities")
+	public ResponseEntity<User> revokeAuthorities(@RequestBody GrantAuthorityDTO grantAuthorityDTO) {
+		log.debug("REST request to revoke authorities {} from User : {}", grantAuthorityDTO.authorityNames(),
+				grantAuthorityDTO.id());
+		return ResponseEntity
+				.ok(adminService.revokeAuthorities(grantAuthorityDTO.id(), grantAuthorityDTO.authorityNames(),
+						grantAuthorityDTO.reason()));
+	}
+
+	/**
+	 * {@code PUT /admin/users/authority-request} : handle authority request.
+	 *
+	 * @param id the id of the authority request to handle
+	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
+	 *         the updated user.
+	 */
+	@PutMapping("/users/authority-request")
+	public ResponseEntity<User> handleAuthorityRequest(
+			@RequestBody AuthorityRequestDTO authorityRequestDTO) {
+		log.debug("REST request to handle authority request for User : {} with approve {} and reason {}",
+				authorityRequestDTO.id(), authorityRequestDTO.approve(), authorityRequestDTO.reason());
+		return ResponseEntity
+				.ok(adminService.handleAuthorityRequest(authorityRequestDTO.id(), authorityRequestDTO.approve(),
+						authorityRequestDTO.reason()));
 	}
 
 	/**

@@ -1,5 +1,6 @@
 package org.ngelmakproject.web.rest;
 
+import org.ngelmakproject.domain.AuthorityRequest;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.service.MailService;
 import org.ngelmakproject.service.UserService;
@@ -40,8 +41,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserResource {
 
     private static final Logger log = LoggerFactory.getLogger(UserResource.class);
-
-    private static final String ENTITY_NAME = "user";
 
     @Value("${spring.application.name}")
     private String applicationName;
@@ -150,42 +149,15 @@ public class UserResource {
     }
 
     /**
-     * {@code POST   /users/reset-password/finish} : Finish to reset the password
-     * of the user.
+     * REST endpoint to request a new authority for the current user.
      *
-     * @param keyAndPassword the generated key and the new password.
-     * @throws InvalidPasswordException {@code 400 (Bad Request)} if the password is
-     *                                  incorrect.
-     * @throws RuntimeException         {@code 500 (Internal Server Error)} if the
-     *                                  password could not be reset.
+     * @param authorityName the name of the authority to request
+     * @param motivation    the motivation for requesting the authority
+     * @return the created AuthorityRequest
+     * @throws RuntimeException if the authority request could not be created
      */
-    // @PostMapping("/reset-password/finish")
-    // public void finishPasswordReset(@RequestBody KeyAndPasswordVM keyAndPassword)
-    // {
-    // if (isPasswordLengthInvalid(keyAndPassword.getNewPassword())) {
-    // throw new InvalidPasswordException();
-    // }
-    // Optional<User> user =
-    // userService.completePasswordReset(keyAndPassword.getNewPassword(),
-    // keyAndPassword.getKey());
-
-    // if (!user.isPresent()) {
-    // throw new UserResourceException("No user was found for this reset key");
-    // }
-    // }
-
-    /**
-     * {@code PUT   /users/upload-image} : Upload an image for the current user.
-     * 
-     * @param file
-     * @return the current user.
-     */
-    // @PutMapping("/upload-image")
-    // @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.USER + "\")")
-    // public ResponseEntity<UserDTO> upload(@RequestParam("file") MultipartFile
-    // file) {
-    // log.debug("REST request to upload the user's account image");
-    // userService.upload(file);
-    // return ResponseUtil.wrapOrNotFound(userService.upload(file));
-    // }
+    public AuthorityRequest requestAuthority(String authorityName, String motivation) {
+        log.debug("REST request to request authority {} with motivation {}", authorityName, motivation);
+        return userService.requestAuthority(authorityName, motivation);
+    }
 }

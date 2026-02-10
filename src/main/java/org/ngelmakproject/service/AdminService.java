@@ -3,11 +3,20 @@ package org.ngelmakproject.service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.ngelmakproject.domain.Authority;
+import org.ngelmakproject.domain.AuthorityHistory;
+import org.ngelmakproject.domain.AuthorityRequest;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.domain.enumeration.CertificationStatus;
+import org.ngelmakproject.repository.AuthorityHistoryRepository;
+import org.ngelmakproject.repository.AuthorityRepository;
+import org.ngelmakproject.repository.AuthorityRequestRepository;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.web.rest.dto.CertificationDTO;
+import org.ngelmakproject.web.rest.errors.ResourceNotFoundException;
 import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.ngelmakproject.web.rest.util.RandomUtil;
 import org.slf4j.Logger;
@@ -25,14 +34,27 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminService.class);
+    private static final String ENTITY_NAME = "user";
 
+    private final UserService userService;
     private final UserRepository userRepository;
+    private final AuthorityRequestRepository authorityRequestRepository;
+    private final AuthorityRepository authorityRepository;
+    private final AuthorityHistoryRepository historyRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AdminService(
             UserRepository userRepository,
+            AuthorityRepository authorityRepository,
+            AuthorityHistoryRepository historyRepository,
+            UserService userService,
+            AuthorityRequestRepository authorityRequestRepository,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.userService = userService;
+        this.authorityRequestRepository = authorityRequestRepository;
+        this.authorityRepository = authorityRepository;
+        this.historyRepository = historyRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -136,6 +158,135 @@ public class AdminService {
                 })
                 .map(userRepository::save)
                 .orElseThrow(UserNotFoundException::new);
+    }
+
+    /**
+     * Grants authority to a user.
+     *
+     * @param id             of the user to update
+     * @param authorityNames the names of the authorities to grant
+     * @param reason         the reason for granting the authorities
+     * @return the updated User object with the authorities granted.
+     */
+    public User grantAuthorities(Long id, Set<String> authorityNames, String reason) {
+        User user = userRepository.findById(id)
+                .orElseThrow(UserNotFoundException::new);
+
+        // Conversion des noms → objets Authority
+        Set<Authority> authorities = authorityRepository.findAll().stream()
+                .filter(a -> authorityNames.contains(a.getName()))
+                .collect(Collectors.toSet());
+
+        return grantAuthorities(user, authorities, reason);
+    }
+
+    /**
+     * Grants authority to a user.
+     *
+     * @param targetUser  the user to update
+     * @param authorities the authorities to grant
+     * @param reason      the reason for granting the authorities
+     * @return the updated User object with the authorities granted.
+     */
+    public User grantAuthorities(User targetUser, Set<Authority> authorities, String reason) {
+        User adminUser = userService.profile();
+
+        // Ajout des autorités au user
+        targetUser.getAuthorities().addAll(authorities);
+        userRepository.save(targetUser);
+
+        // Historisation
+        List<AuthorityHistory> historyEntries = authorities.stream().map(auth -> {
+            AuthorityHistory history = new AuthorityHistory();
+            history.setUser(targetUser);
+            history.setAuthority(auth);
+            history.setActor(adminUser);
+            history.setAction(AuthorityHistory.Action.APPROVED);
+            history.setReason(reason);
+            return history;
+        }).toList();
+
+        historyRepository.saveAll(historyEntries);
+
+        return targetUser;
+    }
+
+    /**
+     * Revokes authority from a user.
+     *
+     * @param id             of the user to update
+     * @param authorityNames the names of the authorities to revoke
+     * @param reason         the reason for revoking the authorities
+     * @return the updated User object with the authorities revoked.
+     */
+    public User revokeAuthorities(Long id, Set<String> authorityNames, String reason) {
+        User user = userRepository.findById(id)
+                .orElseThrow(UserNotFoundException::new);
+
+        Set<Authority> authoritiesToRemove = user.getAuthorities().stream()
+                .filter(a -> authorityNames.contains(a.getName()))
+                .collect(Collectors.toSet());
+
+        return revokeAuthorities(user, authoritiesToRemove, reason);
+    }
+
+    /**
+     * Revokes authority from a user.
+     *
+     * @param targetUser the user to update
+     * @param authorities the authorities to revoke
+     * @param reason      the reason for revoking the authorities
+     * @return the updated User object with the authorities revoked.
+     */
+    public User revokeAuthorities(User targetUser, Set<Authority> authorities, String reason) {
+        User adminUser = userService.profile();
+
+        targetUser.getAuthorities().removeAll(authorities);
+        userRepository.save(targetUser);
+
+        List<AuthorityHistory> historyEntries = authorities.stream().map(auth -> {
+            AuthorityHistory history = new AuthorityHistory();
+            history.setUser(targetUser);
+            history.setAuthority(auth);
+            history.setActor(adminUser);
+            history.setAction(AuthorityHistory.Action.REVOKED);
+            history.setReason(reason);
+            return history;
+        }).toList();
+
+        historyRepository.saveAll(historyEntries);
+
+        return targetUser;
+    }
+
+    /**
+     * Handles an authority request by either approving or rejecting it based on the
+     * provided parameters.
+     *
+     * @param requestId the ID of the authority request to handle
+     * @param approve   a boolean indicating whether to approve (true) or reject
+     *                  (false) the request
+     * @param reason    the reason for approving or rejecting the request
+     * @return the updated User object after handling the authority request
+     * @throws ResourceNotFoundException if the authority request with the specified
+     *                                   ID is not found
+     */
+    public User handleAuthorityRequest(Long requestId, boolean approve, String reason) {
+        return authorityRequestRepository.findById(requestId)
+                .map(existingRequest -> {
+                    if (approve) {
+                        // Grant the authority if approved
+                        return grantAuthorities(existingRequest.getUser(), Set.of(existingRequest.getAuthority()),
+                                reason);
+                    } else {
+                        // Revoke the authority if rejected (in case it was previously granted)
+                        return revokeAuthorities(existingRequest.getUser(), Set.of(existingRequest.getAuthority()),
+                                reason);
+                    }
+                })
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("AuthorityRequest", ENTITY_NAME,
+                                "authorityRequestNotFound"));
     }
 
     /**
