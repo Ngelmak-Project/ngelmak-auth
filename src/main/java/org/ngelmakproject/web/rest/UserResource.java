@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.ngelmakproject.domain.AuthorityRequest;
 import org.ngelmakproject.domain.User;
-import org.ngelmakproject.service.MailService;
 import org.ngelmakproject.service.UserService;
 import org.ngelmakproject.web.rest.dto.AuthorityRequestDTO;
 import org.ngelmakproject.web.rest.dto.PasswordChangeDTO;
@@ -53,11 +52,9 @@ public class UserResource {
     }
 
     private final UserService userService;
-    private final MailService mailService;
 
-    public UserResource(UserService userService, MailService mailService) {
+    public UserResource(UserService userService) {
         this.userService = userService;
-        this.mailService = mailService;
     }
 
     public record LoginUpdateDTO(String login) {
@@ -165,7 +162,8 @@ public class UserResource {
      */
     @PostMapping("/authorities/request")
     public AuthorityRequest requestAuthority(@RequestBody AccessApprovalDTO authorityRequestDTO) {
-        log.debug("REST request to request authority {} with motivation {}", authorityRequestDTO.authorityName(), authorityRequestDTO.motivation());
+        log.debug("REST request to request authority {} with motivation {}", authorityRequestDTO.authorityName(),
+                authorityRequestDTO.motivation());
         return userService.requestAuthority(authorityRequestDTO.authorityName(), authorityRequestDTO.motivation());
     }
 

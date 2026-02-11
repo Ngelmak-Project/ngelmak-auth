@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.AuthorityHistory;
-import org.ngelmakproject.domain.AuthorityRequest;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.domain.enumeration.CertificationStatus;
 import org.ngelmakproject.repository.AuthorityHistoryRepository;
