@@ -1,9 +1,12 @@
 package org.ngelmakproject.web.rest;
 
+import java.util.List;
+
 import org.ngelmakproject.domain.AuthorityRequest;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.service.MailService;
 import org.ngelmakproject.service.UserService;
+import org.ngelmakproject.web.rest.dto.AuthorityRequestDTO;
 import org.ngelmakproject.web.rest.dto.PasswordChangeDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
 import org.ngelmakproject.web.rest.dto.UserUpdateDTO;
@@ -46,7 +49,7 @@ public class UserResource {
     private String applicationName;
 
     // DTO for authority request
-    private record AuthorityRequestDTO(String authorityName, String motivation) {
+    private record AccessApprovalDTO(String authorityName, String motivation) {
     }
 
     private final UserService userService;
@@ -161,8 +164,22 @@ public class UserResource {
      * @throws RuntimeException if the authority request could not be created
      */
     @PostMapping("/authorities/request")
-    public AuthorityRequest requestAuthority(@RequestBody AuthorityRequestDTO authorityRequestDTO) {
+    public AuthorityRequest requestAuthority(@RequestBody AccessApprovalDTO authorityRequestDTO) {
         log.debug("REST request to request authority {} with motivation {}", authorityRequestDTO.authorityName(), authorityRequestDTO.motivation());
         return userService.requestAuthority(authorityRequestDTO.authorityName(), authorityRequestDTO.motivation());
+    }
+
+    /**
+     * REST endpoint to get the current user's authority requests.
+     *
+     * @return a list of AuthorityRequestDTO representing the current user's
+     *         authority requests
+     * 
+     * @throws RuntimeException if the authority requests could not be retrieved
+     */
+    @GetMapping("/authorities/requests")
+    public ResponseEntity<List<AuthorityRequestDTO>> getAuthorityRequests() {
+        log.debug("REST request to get current User's authority requests");
+        return ResponseEntity.ok(userService.getCurrentUserAuthorityRequests());
     }
 }

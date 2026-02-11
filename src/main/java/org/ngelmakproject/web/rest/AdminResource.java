@@ -54,7 +54,7 @@ public class AdminResource {
 	}
 
 	// DTO for handling authority requests
-	public record AuthorityRequestDTO(Long id, boolean approve, String reason) {
+	private record AccessApprovalDTO(Long id, boolean approve, String reason) {
 	}
 
 	private final AdminService adminService;
@@ -150,7 +150,7 @@ public class AdminResource {
 	 */
 	@PutMapping("/users/authority-request")
 	public ResponseEntity<User> handleAuthorityRequest(
-			@RequestBody AuthorityRequestDTO authorityRequestDTO) {
+			@RequestBody AccessApprovalDTO authorityRequestDTO) {
 		log.debug("REST request to handle authority request for User : {} with approve {} and reason {}",
 				authorityRequestDTO.id(), authorityRequestDTO.approve(), authorityRequestDTO.reason());
 		return ResponseEntity

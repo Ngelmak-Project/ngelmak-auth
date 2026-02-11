@@ -14,6 +14,7 @@ import org.ngelmakproject.repository.AuthorityRequestRepository;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.AuthoritiesConstants;
 import org.ngelmakproject.security.UserPrincipal;
+import org.ngelmakproject.web.rest.dto.AuthorityRequestDTO;
 import org.ngelmakproject.web.rest.dto.CertificationDTO;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserUpdateDTO;
@@ -451,6 +452,13 @@ public class UserService {
         authorityRequest.setDecidedAt(Instant.now());
         authorityRequest = authorityRequestRepository.save(authorityRequest);
         return authorityRequest;
+    }
+
+    public List<AuthorityRequestDTO> getCurrentUserAuthorityRequests() {
+        User user = this.profile();
+        return authorityRequestRepository.findByUser(user).stream()
+                .map(AuthorityRequestDTO::from)
+                .toList();
     }
 
     /**
