@@ -19,9 +19,10 @@ public final class AuthoritiesConstants {
     }
 
     /**
-     * Get the set of all defined authority names.  This can be used, for example, to validate authority names when users request new authorities.
+     * Get the set of all defined authority names. This can be used, for example, to
+     * validate authority names when users request new authorities.
      */
     public static Set<String> getAuthorities() {
-        return Set.of(ADMIN, USER, MODERATOR, ANONYMOUS );
+        return Set.of(ADMIN, USER, MODERATOR, ANONYMOUS);
     }
-} 
+}

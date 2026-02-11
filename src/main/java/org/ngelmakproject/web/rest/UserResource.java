@@ -35,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
  * │ ├── PUT /upload-avatar
  * │ ├── POST /change-password
  * │ ├── POST /update-email
+ * │ ├── POST /authorities/request
+ * │ ├── GET /authorities/requests
  * │ └── POST /certifications
  */
 @RestController

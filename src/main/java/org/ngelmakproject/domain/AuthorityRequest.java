@@ -54,7 +54,7 @@ public class AuthorityRequest implements Serializable {
     @JoinColumn(name = "decided_by")
     private User decidedBy;
 
-    @Column(name = "decision_reason", length = 1000, nullable = false)
+    @Column(name = "decision_reason", length = 1000, nullable = true)
     private String decisionReason;
 
     public enum RequestStatus {
