@@ -31,16 +31,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * │ │ ├── POST /register
  * │ │ ├── POST /activate
  * │ │ ├── POST /password-reset
- * │ │ ├── /request
- * │ │ └── /complete
+ * | | └── POST /password-reset/finish
+ * │ │
+ * │ └── /support
+ * │ │ ├── POST /contact
  */
 @RestController
 @RequestMapping("/api/public")
 public class AuthenticateResource {
 
     private static final Logger log = LoggerFactory.getLogger(AuthenticateResource.class);
-
-    private static final String ENTITY_NAME = "user";
 
     @Value("${spring.application.name}")
     private String applicationName;
@@ -89,6 +89,23 @@ public class AuthenticateResource {
                 ? ResponseEntity.ok().build()
                 : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
+    }
+
+    private record ContactRequestDTO(String name, String email, String subject, String message) {
+    }
+
+    /**
+     * Endpoint to send a contact message to support.
+     *
+     * @param contactRequestDTO the contact message information.
+     * @return 200 OK if the message was sent successfully.
+     */
+    @PostMapping("/support/contact")
+    public ResponseEntity<Void> contact(@RequestBody ContactRequestDTO contactRequestDTO) {
+        log.debug("REST request to send a contact message : {}", contactRequestDTO);
+        authService.contactSupport(contactRequestDTO.name(), contactRequestDTO.email(),
+                contactRequestDTO.subject(), contactRequestDTO.message());
+        return ResponseEntity.ok().build();
     }
 
     /**

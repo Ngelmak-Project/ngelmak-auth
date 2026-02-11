@@ -1,14 +1,16 @@
 package org.ngelmakproject.service;
 
+import java.time.Instant;
 import java.util.Optional;
 
+import org.ngelmakproject.domain.ContactMessage;
+import org.ngelmakproject.repository.ContactMessageRepository;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.JwtUtil;
 import org.ngelmakproject.web.rest.dto.LoginRequestDTO;
 import org.ngelmakproject.web.rest.errors.UserBlockedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,12 +24,18 @@ public class AuthenticateService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthenticateService.class);
 
-    @Autowired
-    public UserRepository userRepository;
-    @Autowired
-    public PasswordEncoder passwordEncoder;
-    @Autowired
-    public JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final ContactMessageRepository contactMessageRepository;
+
+    public AuthenticateService(JwtUtil jwtUtil, UserRepository userRepository, PasswordEncoder passwordEncoder,
+            ContactMessageRepository contactMessageRepository) {
+        this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.contactMessageRepository = contactMessageRepository;
+    }
 
     /**
      * Authenticates a user and generates a JWT token.
@@ -96,6 +104,35 @@ public class AuthenticateService {
             log.debug("Token validation failed: {}", e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Handles contact support messages by saving them to the database.
+     *
+     * <p>
+     * This method performs the following operations:
+     * <ul>
+     * <li>Logs the incoming contact message for debugging</li>
+     * <li>Creates a new ContactMessage entity with the provided details</li>
+     * <li>Sets the status to NEW and timestamps the creation time</li>
+     * <li>Saves the ContactMessage to the database using the repository</li>
+     * </ul>
+     *
+     * @param name    The name of the user contacting support (optional)
+     * @param email   The email address of the user contacting support (optional)
+     * @param subject The subject of the support message
+     * @param message The body of the support message
+     */
+    public void contactSupport(String name, String email, String subject, String message) {
+        log.debug("Received contact support message from {}: {}", email, subject);
+        ContactMessage contactMessage = new ContactMessage();
+        contactMessage.setName(name);
+        contactMessage.setEmail(email);
+        contactMessage.setSubject(subject);
+        contactMessage.setMessage(message);
+        contactMessage.setCreatedAt(Instant.now());
+        contactMessage.setStatus(ContactMessage.ContactStatus.NEW);
+        contactMessageRepository.save(contactMessage);
     }
 
 }
