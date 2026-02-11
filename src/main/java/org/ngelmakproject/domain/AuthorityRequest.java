@@ -37,7 +37,7 @@ public class AuthorityRequest implements Serializable {
     private Authority authority;
 
     @NotNull
-    @Column(name = "motivation", length = 1000, nullable = false)
+    @Column(name = "motivation", length = 500, nullable = false)
     private String motivation;
 
     @Enumerated(EnumType.STRING)

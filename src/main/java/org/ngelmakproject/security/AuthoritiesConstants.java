@@ -24,4 +24,4 @@ public final class AuthoritiesConstants {
     public static Set<String> getAuthorities() {
         return Set.of(ADMIN, USER, MODERATOR, ANONYMOUS );
     }
-}
+} 

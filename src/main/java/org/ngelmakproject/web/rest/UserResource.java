@@ -45,6 +45,10 @@ public class UserResource {
     @Value("${spring.application.name}")
     private String applicationName;
 
+    // DTO for authority request
+    private record AuthorityRequestDTO(String authorityName, String motivation) {
+    }
+
     private final UserService userService;
     private final MailService mailService;
 
@@ -156,8 +160,9 @@ public class UserResource {
      * @return the created AuthorityRequest
      * @throws RuntimeException if the authority request could not be created
      */
-    public AuthorityRequest requestAuthority(String authorityName, String motivation) {
-        log.debug("REST request to request authority {} with motivation {}", authorityName, motivation);
-        return userService.requestAuthority(authorityName, motivation);
+    @PostMapping("/authorities/request")
+    public AuthorityRequest requestAuthority(@RequestBody AuthorityRequestDTO authorityRequestDTO) {
+        log.debug("REST request to request authority {} with motivation {}", authorityRequestDTO.authorityName(), authorityRequestDTO.motivation());
+        return userService.requestAuthority(authorityRequestDTO.authorityName(), authorityRequestDTO.motivation());
     }
 }
