@@ -3,6 +3,7 @@ package org.ngelmakproject.web.rest;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.ngelmakproject.domain.ContactMessage;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.AuthoritiesConstants;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
  * │ │ └── DELETE /{id} # Delete user
  * │ │
  * │ └── /management
+ * │ │ ├── GET /contacts # Get user feedback contacts
  * │ │ ├── GET /audits
  * │ │ ├── GET /logs
  * │ │ └── GET /health
@@ -206,5 +208,20 @@ public class AdminResource {
 	public ResponseEntity<User> certificationWithdrawal(@PathVariable("id") Long id) {
 		log.debug("REST request to withdraw certification of User : {}", id);
 		return ResponseEntity.ok(adminService.certificationWithdrawal(id));
+	}
+
+	/**
+	 * {@code GET /admin/management/contacts} : get all untreated contact messages.
+	 *
+	 * @param pageable the pagination information.
+	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
+	 *         all untreated contact messages.
+	 */
+	@GetMapping("/management/contacts")
+	public ResponseEntity<PageDTO<ContactMessage>> getContactMessages(Pageable pageable) {
+		log.debug("REST request to get all contact messages for an admin");
+		PageDTO<ContactMessage> page = adminService.findAllUntreatedContactMessage(pageable);
+		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
+				.body(page);
 	}
 }

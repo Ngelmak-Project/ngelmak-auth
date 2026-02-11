@@ -26,5 +26,5 @@ public interface ContactMessageRepository extends JpaRepository<ContactMessage, 
 			WHERE c.status != 'CLOSED'
 			ORDER BY c.createdAt DESC
 			""")
-	Slice<ContactMessage> findUnclosedContactMessageOrderByCreatedAt(Pageable pageable);
+	Page<ContactMessage> findUnclosedContactMessageOrderByCreatedAt(Pageable pageable);
 }

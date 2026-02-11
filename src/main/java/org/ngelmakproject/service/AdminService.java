@@ -8,18 +8,22 @@ import java.util.stream.Collectors;
 
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.AuthorityHistory;
+import org.ngelmakproject.domain.ContactMessage;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.domain.enumeration.CertificationStatus;
 import org.ngelmakproject.repository.AuthorityHistoryRepository;
 import org.ngelmakproject.repository.AuthorityRepository;
 import org.ngelmakproject.repository.AuthorityRequestRepository;
+import org.ngelmakproject.repository.ContactMessageRepository;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.web.rest.dto.CertificationDTO;
+import org.ngelmakproject.web.rest.dto.PageDTO;
 import org.ngelmakproject.web.rest.errors.ResourceNotFoundException;
 import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.ngelmakproject.web.rest.util.RandomUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -38,6 +42,7 @@ public class AdminService {
     private final UserService userService;
     private final UserRepository userRepository;
     private final AuthorityRequestRepository authorityRequestRepository;
+    private final ContactMessageRepository contactMessageRepository;
     private final AuthorityRepository authorityRepository;
     private final AuthorityHistoryRepository historyRepository;
     private final PasswordEncoder passwordEncoder;
@@ -48,10 +53,12 @@ public class AdminService {
             AuthorityHistoryRepository historyRepository,
             UserService userService,
             AuthorityRequestRepository authorityRequestRepository,
+            ContactMessageRepository contactMessageRepository,
             PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.authorityRequestRepository = authorityRequestRepository;
+        this.contactMessageRepository = contactMessageRepository;
         this.authorityRepository = authorityRepository;
         this.historyRepository = historyRepository;
         this.passwordEncoder = passwordEncoder;
@@ -305,6 +312,31 @@ public class AdminService {
                 })
                 .map(userRepository::save)
                 .orElseThrow(UserNotFoundException::new);
+    }
+
+
+
+    /**
+     * Get all the contactMessages.
+     *
+     * @param pageable the pagination information.
+     * @return the list of entities.
+     */
+    @Transactional(readOnly = true)
+    public PageDTO<ContactMessage> findAllUntreatedContactMessage(Pageable pageable) {
+        log.debug("Request to get all ContactMessages");
+        var page = contactMessageRepository.findUnclosedContactMessageOrderByCreatedAt(pageable);
+        return PageDTO.from(page);
+    }
+
+    /**
+     * Delete the contactMessage by id.
+     *
+     * @param id the id of the entity.
+     */
+    public void delete(Long id) {
+        log.debug("Request to delete ContactMessage : {}", id);
+        contactMessageRepository.deleteById(id);
     }
 
     /**
