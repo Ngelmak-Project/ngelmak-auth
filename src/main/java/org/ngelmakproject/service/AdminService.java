@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.AuthorityHistory;
 import org.ngelmakproject.domain.ContactMessage;
+import org.ngelmakproject.domain.ContactMessage.ContactStatus;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.domain.enumeration.CertificationStatus;
 import org.ngelmakproject.repository.AuthorityHistoryRepository;
@@ -314,10 +315,21 @@ public class AdminService {
                 .orElseThrow(UserNotFoundException::new);
     }
 
-
+    /**
+     * Get all the Contact Messages.
+     *
+     * @param pageable the pagination information.
+     * @return the list of entities.
+     */
+    @Transactional(readOnly = true)
+    public PageDTO<ContactMessage> findAll(Pageable pageable) {
+        log.debug("Request to get all ContactMessages");
+        var page = contactMessageRepository.findAll(pageable);
+        return PageDTO.from(page);
+    }
 
     /**
-     * Get all the contactMessages.
+     * Get all the untreated Contact Messages.
      *
      * @param pageable the pagination information.
      * @return the list of entities.
@@ -327,6 +339,23 @@ public class AdminService {
         log.debug("Request to get all ContactMessages");
         var page = contactMessageRepository.findUnclosedContactMessage(pageable);
         return PageDTO.from(page);
+    }
+
+    /**
+     * Get all the contactMessages.
+     *
+     * @param id of the Message to close.
+     * @return the closed Message.
+     */
+    @Transactional(readOnly = true)
+    public ContactMessage closeContactMessage(Long id) {
+        log.debug("Request to get all ContactMessages");
+        return contactMessageRepository.findById(id).map(existingMessage -> {
+            existingMessage.setStatus(ContactStatus.CLOSED);
+            return existingMessage;
+        }).map(contactMessageRepository::save)
+                .orElseThrow(() -> new ResourceNotFoundException("The message you try to close doesn't exist",
+                        "contactMessage", "notFound"));
     }
 
     /**

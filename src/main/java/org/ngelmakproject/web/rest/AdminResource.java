@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -219,9 +220,26 @@ public class AdminResource {
 	 */
 	@GetMapping("/management/contacts")
 	public ResponseEntity<PageDTO<ContactMessage>> getContactMessages(Pageable pageable) {
-		log.debug("REST request to get all contact messages for an admin");
-		PageDTO<ContactMessage> page = adminService.findAllUntreatedContactMessage(pageable);
+		log.debug("REST request to get all Contact Message for an admin");
+		PageDTO<ContactMessage> page = adminService.findAll(pageable);
 		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
 				.body(page);
+	}
+
+	private record CloseContactMessageDTO(Long id) {
+	}
+
+	/**
+	 * {@code POST /admin/management/close} : close a contact messages.
+	 *
+	 * @param pageable the pagination information.
+	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
+	 *         of the updated contact message.
+	 */
+	@PostMapping("/management/close")
+	public ResponseEntity<ContactMessage> closeContactMessages(@RequestBody CloseContactMessageDTO contactMessageDTO) {
+		log.debug("REST request to close a Contact Message : {}", contactMessageDTO);
+		ContactMessage message = adminService.closeContactMessage(contactMessageDTO.id);
+		return ResponseEntity.ok().body(message);
 	}
 }
