@@ -325,7 +325,7 @@ public class AdminService {
     @Transactional(readOnly = true)
     public PageDTO<ContactMessage> findAllUntreatedContactMessage(Pageable pageable) {
         log.debug("Request to get all ContactMessages");
-        var page = contactMessageRepository.findUnclosedContactMessageOrderByCreatedAt(pageable);
+        var page = contactMessageRepository.findUnclosedContactMessage(pageable);
         return PageDTO.from(page);
     }
 

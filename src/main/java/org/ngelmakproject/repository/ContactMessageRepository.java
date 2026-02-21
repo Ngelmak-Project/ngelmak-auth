@@ -21,10 +21,6 @@ import org.springframework.stereotype.Repository;
 @SuppressWarnings("unused")
 @Repository
 public interface ContactMessageRepository extends JpaRepository<ContactMessage, Long> {
-	@Query("""
-			SELECT c FROM ContactMessage c
-			WHERE c.status != 'CLOSED'
-			ORDER BY c.createdAt DESC
-			""")
-	Page<ContactMessage> findUnclosedContactMessageOrderByCreatedAt(Pageable pageable);
+	@Query("SELECT c FROM ContactMessage c WHERE c.status != 'CLOSED'")
+	Page<ContactMessage> findUnclosedContactMessage(Pageable pageable);
 }
