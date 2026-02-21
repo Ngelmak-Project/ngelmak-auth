@@ -347,7 +347,6 @@ public class AdminService {
      * @param id of the Message to close.
      * @return the closed Message.
      */
-    @Transactional(readOnly = true)
     public ContactMessage closeContactMessage(Long id) {
         log.debug("Request to get all ContactMessages");
         return contactMessageRepository.findById(id).map(existingMessage -> {
