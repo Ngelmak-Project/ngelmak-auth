@@ -130,7 +130,7 @@ public class AuthenticateService {
         contactMessage.setEmail(email);
         contactMessage.setSubject(subject);
         contactMessage.setMessage(message);
-        contactMessage.setCreatedAt(Instant.now());
+        contactMessage.setSentAt(Instant.now());
         contactMessage.setStatus(ContactMessage.ContactStatus.NEW);
         contactMessageRepository.save(contactMessage);
     }

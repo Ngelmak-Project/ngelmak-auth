@@ -42,8 +42,8 @@ public class ContactMessage implements Serializable {
     @Column(name = "message", length = 1000, nullable = false)
     private String message;
 
-    @Column(name = "created_at")
-    private Instant createdAt;
+    @Column(name = "sent_at")
+    private Instant sentAt;
 
     @Column(name = "status", length = 20)
     @Enumerated(EnumType.STRING)
@@ -98,12 +98,12 @@ public class ContactMessage implements Serializable {
         this.message = message;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public Instant getSentAt() {
+        return sentAt;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public void setSentAt(Instant sentAt) {
+        this.sentAt = sentAt;
     }
 
     public ContactStatus getStatus() {
@@ -117,7 +117,7 @@ public class ContactMessage implements Serializable {
     @Override
     public String toString() {
         return "ContactMessage [id=" + id + ", name=" + name + ", email=" + email + ", subject=" + subject
-                + ", message=" + message + ", createdAt=" + createdAt + ", status=" + status + "]";
+                + ", message=" + message + ", sentAt=" + sentAt + ", status=" + status + "]";
     }
 
 }
