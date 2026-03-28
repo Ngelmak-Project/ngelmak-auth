@@ -9,6 +9,7 @@ import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.JwtUtil;
 import org.ngelmakproject.web.rest.dto.LoginRequestDTO;
 import org.ngelmakproject.web.rest.errors.UserBlockedException;
+import org.ngelmakproject.web.rest.errors.UserNotActivatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -41,42 +42,42 @@ public class AuthenticateService {
      * Authenticates a user and generates a JWT token.
      *
      * <p>
-     * This method performs the following key operations:
+     * This method performs the following operations:
      * <ul>
-     * <li>Looks up user by username</li>
-     * <li>Ensures user is not blocked</li>
-     * <li>Verifies password using secure password matching</li>
-     * <li>Generates either a standard or remember-me JWT token</li>
+     * <li>Looks up the user by login</li>
+     * <li>Ensures the account is activated</li>
+     * <li>Ensures the account is not blocked</li>
+     * <li>Verifies the password</li>
+     * <li>Generates a JWT token (standard or remember-me)</li>
      * </ul>
      *
      * @param loginRequestDTO Contains login credentials and remember-me preference
-     * @return Optional containing the JWT token if authentication is successful,
+     * @return Optional containing the JWT token if authentication succeeds,
      *         or an empty Optional if authentication fails
-     *
-     * @see LoginRequestDTO
-     * @see JwtUtil
      */
     public Optional<String> authenticate(LoginRequestDTO loginRequestDTO) {
-        // Log authentication attempt for debugging
-        log.debug("Request to authenticate a User : {}", loginRequestDTO);
+        log.debug("Request to authenticate a User: {}", loginRequestDTO);
 
-        // Complex authentication flow using method chaining
-        Optional<String> token = userRepository.findOneByLoginIgnoreCase(loginRequestDTO.login())
-                .map(u -> {
-                    // Check if the user account is blocked before proceeding.
-                    if (u.isBlocked()) {
+        return userRepository.findOneByLoginIgnoreCase(loginRequestDTO.login())
+                .map(user -> {
+                    // Account must be activated
+                    if (!user.isActivated()) {
+                        throw new UserNotActivatedException();
+                    }
+
+                    // Account must not be blocked
+                    if (user.isBlocked()) {
                         throw new UserBlockedException();
                     }
-                    return u;
-                })
-                // Filter: Verify password using secure encoder
-                .filter(u -> passwordEncoder.matches(loginRequestDTO.password(), u.getPassword()))
-                // Map: Generate token based on remember-me preference
-                .map(u -> loginRequestDTO.rememberMe()
-                        ? jwtUtil.generateRememberMeToken(u) // Long-lived token
-                        : jwtUtil.generateToken(u)); // Standard token
 
-        return token;
+                    return user;
+                })
+                // Verify password
+                .filter(user -> passwordEncoder.matches(loginRequestDTO.password(), user.getPassword()))
+                // Generate token
+                .map(user -> loginRequestDTO.rememberMe()
+                        ? jwtUtil.generateRememberMeToken(user)
+                        : jwtUtil.generateToken(user));
     }
 
     /**

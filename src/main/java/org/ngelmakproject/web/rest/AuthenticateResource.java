@@ -8,6 +8,7 @@ import org.ngelmakproject.service.UserService;
 import org.ngelmakproject.web.rest.dto.LoginRequestDTO;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
+import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,25 +17,30 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Controller to authenticate users.
- * /api
- * └── /public # Unsecured endpoints
- * │ └── /auth
- * │ │ ├── POST /authenticate
- * │ │ ├── POST /register
- * │ │ ├── POST /activate
- * │ │ ├── POST /password-reset
- * | | └── POST /password-reset/finish
- * │ │
- * │ └── /support
- * │ │ ├── POST /contact
+ * Public Authentication Controller.
+ * 
+ * <p>
+ * Base path: /api/public/
+ * 
+ * - /api
+ * - └── /public # Unsecured endpoints
+ * - │ ├── /auth # Authentication & account lifecycle
+ * - │ │ ├── POST /authenticate
+ * - │ │ ├── POST /register
+ * - │ │ ├── POST /register
+ * - │ │ ├── GET /activate?key= # GET because it's a link
+ * - │ │ ├── POST /password-reset/init
+ * - │ │ └── POST /password-reset/finish
+ * - │ │
+ * - │ └── /support # Public contact/support forms
+ * - │ │ └── POST /contact
  */
 @RestController
 @RequestMapping("/api/public")
@@ -53,6 +59,20 @@ public class AuthenticateResource {
         this.userService = userService;
     }
 
+    /**
+     * {@code POST  /auth/authenticate} : Authenticates a user using login
+     * credentials and returns a JWT token.
+     *
+     * <ul>
+     * <li>Validates login credentials</li>
+     * <li>Ensures the account is activated and not blocked</li>
+     * <li>Generates a JWT token (standard or remember-me)</li>
+     * </ul>
+     *
+     * @param loginRequestDTO DTO containing login, password, and remember-me flag.
+     * @return {@code 200 (OK)} with JWT token if authentication succeeds,
+     *         401 Unauthorized if credentials are invalid
+     */
     @PostMapping("/auth/authenticate")
     public ResponseEntity<JWTToken> authenticate(
             @RequestBody LoginRequestDTO loginRequestDTO) {
@@ -67,6 +87,19 @@ public class AuthenticateResource {
         return ResponseEntity.ok(new JWTToken(token));
     }
 
+    /**
+     * {@code POST  /auth/activate?key=...} : Authenticates a user using login
+     * credentials and returns a JWT token.
+     *
+     * <ul>
+     * <li>Validates login credentials</li>
+     * <li>Ensures the account is activated and not blocked</li>
+     * <li>Generates a JWT token (standard or remember-me)</li>
+     * </ul>
+     *
+     * @param loginRequestDTO DTO containing login, password, and remember-me flag.
+     * @return {@code 200 (OK)} with the created UserDTO
+     */
     @PostMapping("/auth/register")
     public ResponseEntity<UserDTO> register(
             @RequestBody RegisterRequestDTO userDTO) {
@@ -76,29 +109,65 @@ public class AuthenticateResource {
                 .body(UserDTO.from(newUser));
     }
 
-    @GetMapping("/auth/validate")
-    public ResponseEntity<Void> validateToken(
-            @RequestHeader("Authorization") String authHeader) {
-
-        // Authorization: Bearer <token>
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        return authService.validateToken(authHeader.substring(7))
-                ? ResponseEntity.ok().build()
-                : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
+    /**
+     * {@code GET  /auth/activate?key=...} : Activates a user account using a
+     * temporary
+     * verification key.
+     *
+     * @param key the activation key.
+     * @throws UserNotFoundException {@code 500 (Internal Server Error)} if the user
+     *                               couldn't be activated.
+     */
+    @GetMapping("/auth/activate")
+    public void activateUser(@RequestParam String key) {
+        log.debug("REST request to activate User's email");
+        userService.activateUserByKey(key);
     }
+
+    private record RequestPasswordResetDTO(String email) {
+    }
+
+    /**
+     * {@code POST  /auth/reset-password/init} : Initiates a password reset request
+     * by
+     * generating a temporary key and sending it to the user's email address.
+     *
+     * @param email the user's email address
+     */
+    @PostMapping("/auth/reset-password/init")
+    public void requestPasswordReset(@RequestBody RequestPasswordResetDTO resetDTO) {
+        log.debug("REST request to initiate password reset for {}", resetDTO.email);
+        userService.requestPasswordReset(resetDTO.email);
+    }
+
+    private record CompletePasswordResetDTO(String key, String newPassword) {
+    }
+
+    /**
+     * {@code POST  /auth/reset-password/finish} : Completes the password reset
+     * process
+     * by validating the temporary key and setting a new password.
+     *
+     * @param key         the temporary reset key
+     * @param newPassword the new password chosen by the user
+     */
+    @PostMapping("/auth/reset-password/finish")
+    public void completePasswordReset(@RequestBody CompletePasswordResetDTO resetDTO) {
+        log.debug("REST request to complete password reset : {}", resetDTO);
+        userService.completePasswordReset(resetDTO.key, resetDTO.newPassword);
+    }
+
+    // SUPPORT
 
     private record ContactRequestDTO(String name, String email, String subject, String message) {
     }
 
     /**
-     * Endpoint to send a contact message to support.
+     * {@code POST  /support/contact} : Endpoint to send a contact message to
+     * support.
      *
      * @param contactRequestDTO the contact message information.
-     * @return 200 OK if the message was sent successfully.
+     * @return {@code 200 (OK)} if the message was sent successfully.
      */
     @PostMapping("/support/contact")
     public ResponseEntity<Void> contact(@RequestBody ContactRequestDTO contactRequestDTO) {

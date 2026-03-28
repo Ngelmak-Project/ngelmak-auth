@@ -76,12 +76,32 @@ public class User implements Serializable {
     @Column(length = 254, nullable = true)
     private String email;
 
-    /*
-     * If the user has activated their account via email confirmation.
-     */
+    /* If the user has activated their account via email confirmation. */
     @NotNull
     @Column(nullable = false)
     private boolean activated = false;
+
+    /* Token used for account activation and email verification. */
+    @JsonIgnore
+    @Size(max = 20)
+    @Column(name = "activation_key", length = 20)
+    private String activationKey;
+
+    /* Timestamp marking when the activation key was generated. */
+    @JsonIgnore
+    @Column(name = "activation_date")
+    private Instant activationDate = null;
+
+    /* Token used to initiate a password reset process. */
+    @JsonIgnore
+    @Size(max = 20)
+    @Column(name = "reset_key", length = 20)
+    private String resetKey;
+
+    /* Timestamp marking when the password reset was requested. */
+    @JsonIgnore
+    @Column(name = "reset_date")
+    private Instant resetDate = null;
 
     /*
      * If the user account is blocked due to too many failed login attempts or
@@ -98,39 +118,30 @@ public class User implements Serializable {
     @Column(name = "lang_key", length = 5)
     private String langKey;
 
+    /* URL of the user's profile image. */
     @Size(max = 256)
     @Column(name = "image_url", length = 256)
     private String imageUrl;
 
-    /* Used for email activation and password reset. */
-    @JsonIgnore
-    @Size(max = 20)
-    @Column(name = "activation_key", length = 20)
-    private String activationKey;
-
-    @JsonIgnore
-    @Size(max = 20)
-    @Column(name = "reset_key", length = 20)
-    private String resetKey;
-
-    @JsonIgnore
-    @Column(name = "reset_date")
-    private Instant resetDate = null;
-
+    /* Timestamp of the last modification made to the user record. */
     @JsonIgnore
     @Column(name = "last_modified_date")
     private Instant lastModifiedDate = null;
 
+    /* Timestamp indicating when the user record was initially created. */
     @Column(name = "created_date")
     private Instant createdDate = null;
 
+    /* Timestamp marking when the user account was soft‑deleted. */
     @Column(name = "deleted_date")
     private Instant deletedDate = null;
 
+    /* Timestamp indicating when the user's certification was granted. */
     @JsonIgnore
     @Column(name = "certified_date")
     private Instant certifiedDate;
 
+    /* Current certification status of the user. */
     @Enumerated(EnumType.STRING)
     @Column(name = "certification_status", length = 20)
     private CertificationStatus certificationStatus = CertificationStatus.NOT_REQUESTED;
@@ -304,6 +315,14 @@ public class User implements Serializable {
         this.activationKey = activationKey;
     }
 
+    public Instant getActivationDate() {
+        return activationDate;
+    }
+
+    public void setActivationDate(Instant activationDate) {
+        this.activationDate = activationDate;
+    }
+
     public String getResetKey() {
         return resetKey;
     }
@@ -373,12 +392,9 @@ public class User implements Serializable {
 
     @Override
     public int hashCode() {
-        // see
-        // https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
         return getClass().hashCode();
     }
 
-    // prettier-ignore
     @Override
     public String toString() {
         return "User{" +
@@ -389,7 +405,6 @@ public class User implements Serializable {
                 ", imageUrl='" + imageUrl + '\'' +
                 ", activated='" + activated + '\'' +
                 ", langKey='" + langKey + '\'' +
-                ", activationKey='" + activationKey + '\'' +
                 "}";
     }
 }

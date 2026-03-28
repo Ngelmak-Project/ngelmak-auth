@@ -115,23 +115,41 @@ public class UserService {
 
     /**
      * Activates a user account using the provided activation key.
-     * 
-     * <p>
-     * Marks the user as activated and clears the activation key.
      *
-     * @param key Unique activation key
-     * @return Optional of activated User
+     * <p>
+     * This method performs the following steps:
+     * <ul>
+     * <li>Looks up a user associated with the given activation key.</li>
+     * <li>Validates that the activation key has not expired
+     * (maximum validity: 24 hours from generation).</li>
+     * <li>If valid, activates the user account and clears the activation key.</li>
+     * <li>If the key is missing, invalid, or expired, a
+     * {@link UserNotFoundException} is thrown.</li>
+     * </ul>
+     *
+     * <p>
+     * This ensures that activation links cannot be reused indefinitely and that
+     * expired activation attempts fail securely.
+     *
+     * @param key the temporary activation key sent to the user
+     * @return the activated user
+     * @throws UserNotFoundException if the key is invalid, expired, or no user
+     *                               matches it
      */
-    public User activateRegistration(String key) {
-        log.debug("Activating user for activation key {}", key);
+    public User activateUserByKey(String key) {
+        log.debug("Activating user with key {}", key);
         return userRepository
                 .findOneByActivationKey(key)
+                .filter(user -> user.getActivationDate() != null &&
+                        user.getActivationDate().isAfter(Instant.now().minus(24, ChronoUnit.HOURS)))
                 .map(user -> {
                     user.setActivated(true);
                     user.setActivationKey(null);
+                    user.setActivationDate(null);
                     log.debug("Activated user: {}", user);
-                    return user;
-                }).map(userRepository::save).orElseThrow(UserNotFoundException::new);
+                    return userRepository.save(user);
+                })
+                .orElseThrow(UserNotFoundException::new);
     }
 
     /**
@@ -139,15 +157,14 @@ public class UserService {
      * <p>
      * Resets password if the reset key is valid and not expired.
      *
-     * @param newPassword New password to set
      * @param key         Password reset key
-     * @return user with reset password
+     * @param newPassword New password to set
      */
-    public User completePasswordReset(String newPassword, String key) {
+    public void completePasswordReset(String key, String newPassword) {
         log.debug("Complete User password reset with key {}", key);
-        return userRepository
+        userRepository
                 .findOneByResetKey(key)
-                .filter(user -> user.getResetDate().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)))
+                .filter(user -> user.getResetDate().isAfter(Instant.now().minus(30, ChronoUnit.MINUTES)))
                 .map(user -> {
                     user.setPassword(passwordEncoder.encode(newPassword));
                     user.setResetKey(null);
@@ -159,25 +176,50 @@ public class UserService {
     }
 
     /**
-     * Initiates password reset request for a user.
-     * <p>
-     * Generates a reset key for an activated user.
+     * Initiates a password reset request for the given user email.
      *
-     * @param email User's email address
-     * @return Optional of user with reset key
+     * <p>
+     * This method behaves as follows:
+     * <ul>
+     * <li>If the user exists and is activated, and an existing reset key is still
+     * valid
+     * (generated within the last 30 minutes), the same key is reused and its
+     * validity
+     * is effectively extended.</li>
+     * <li>If no valid reset key exists, a new one is generated and
+     * timestamped.</li>
+     * <li>If the email does not correspond to an activated user, nothing
+     * happens.</li>
+     * </ul>
+     *
+     * <p>
+     * This approach avoids generating multiple reset keys for repeated requests
+     * within a
+     * short period, prevents invalidating links the user may already have received,
+     * and
+     * ensures a consistent and user‑friendly reset flow.
+     *
+     * @param email the email address of the user requesting a password reset
      */
-    public User requestPasswordReset(String email) {
+    public void requestPasswordReset(String email) {
         log.debug("Request to reset user with email {}", email);
-        return userRepository
-                .findOneByEmailIgnoreCase(email)
-                .filter(User::isActivated)
-                .map(user -> {
-                    user.setResetKey(RandomUtil.generateResetKey());
-                    user.setResetDate(Instant.now());
-                    return user;
-                })
-                .map(userRepository::save)
-                .orElseThrow(UserNotFoundException::new);
+        userRepository
+                .findOneByEmailIgnoreCaseAndActivatedIsTrue(email)
+                .ifPresent(user -> {
+                    boolean hasValidKey = user.getResetKey() != null &&
+                            user.getResetDate() != null &&
+                            user.getResetDate().isAfter(Instant.now().minus(30, ChronoUnit.MINUTES));
+
+                    if (hasValidKey) {
+                        log.debug("Reusing existing reset key {} for user {}", user.getResetKey(), email);
+                    } else {
+                        user.setResetKey(RandomUtil.generateKey());
+                        user.setResetDate(Instant.now());
+                        log.debug("Generated new reset key for user {}: {}", email, user.getResetKey());
+                    }
+
+                    userRepository.save(user);
+                });
     }
 
     /**
@@ -224,21 +266,37 @@ public class UserService {
      * @throws UserNotFoundException     If no user is found for the current
      *                                   authentication context
      */
-    @Transactional
     public User updateLogin(String login) {
-        log.debug("Request update User's login : {}", login);
-        return getUserWithAuthorities().map(UserPrincipal::id)
-                .flatMap(userRepository::findById)
-                .map(existingUser -> {
-                    // Check if login is already taken
-                    if (userRepository.findOneByLoginIgnoreCase(login.toLowerCase()).isPresent()) {
-                        throw new LoginAlreadyUsedException();
-                    }
-                    // Set login (converted to lowercase to ensure uniqueness)
-                    existingUser.setLogin(login.toLowerCase());
-                    log.debug("Changed login for User: {}", existingUser);
-                    return existingUser;
-                }).orElseThrow(UserNotFoundException::new);
+        log.debug("Request to update User's login: {}", login);
+
+        String normalizedLogin = login.toLowerCase();
+
+        // Get current user principal
+        UserPrincipal principal = getUserWithAuthorities()
+                .orElseThrow(UserNotFoundException::new);
+
+        // If the login is already the same, skip everything
+        if (normalizedLogin.equals(principal.login())) {
+            // No DB call needed — return the current user entity
+            return userRepository.findById(principal.id())
+                    .orElseThrow(UserNotFoundException::new);
+        }
+
+        // Check if login is used by another user
+        userRepository.findOneByLoginIgnoreCase(normalizedLogin)
+                .filter(other -> !other.getId().equals(principal.id()))
+                .ifPresent(existing -> {
+                    throw new LoginAlreadyUsedException();
+                });
+
+        // Load the user and update login
+        return userRepository.findById(principal.id())
+                .map(user -> {
+                    user.setLogin(normalizedLogin);
+                    log.debug("Updated login for User: {}", principal.id());
+                    return user;
+                })
+                .orElseThrow(UserNotFoundException::new);
     }
 
     /**
@@ -251,21 +309,39 @@ public class UserService {
      * @throws UserNotFoundException     If no user is found for the current
      *                                   authentication context
      */
-    @Transactional
     public User updateEmail(String email) {
-        log.debug("Request update User's email : {}", email);
-        return getUserWithAuthorities().map(UserPrincipal::id)
-                .flatMap(userRepository::findById)
-                .map(existingUser -> {
-                    // Check if email is already registered
-                    if (userRepository.findOneByEmailIgnoreCase(email).isPresent()) {
-                        throw new EmailAlreadyUsedException();
-                    }
-                    // Set email (converted to lowercase to ensure uniqueness)
-                    existingUser.setEmail(email.toLowerCase());
-                    log.debug("Changed password for User: {}", existingUser);
-                    return existingUser;
-                }).orElseThrow(UserNotFoundException::new);
+        log.debug("Request to update User's email: {}", email);
+
+        String normalizedEmail = email.toLowerCase();
+
+        // Get current user principal
+        UserPrincipal principal = getUserWithAuthorities()
+                .orElseThrow(UserNotFoundException::new);
+
+        // If the email is already the same, skip all checks and DB lookups
+        if (normalizedEmail.equals(principal.email())) {
+            return userRepository.findById(principal.id())
+                    .orElseThrow(UserNotFoundException::new);
+        }
+
+        // Check if email is used by another user
+        userRepository.findOneByEmailIgnoreCase(normalizedEmail)
+                .filter(other -> !other.getId().equals(principal.id()))
+                .ifPresent(existing -> {
+                    throw new EmailAlreadyUsedException();
+                });
+
+        // Load the user and update email
+        return userRepository.findById(principal.id())
+                .map(user -> {
+                    user.setEmail(normalizedEmail);
+                    user.setActivated(false); // require reactivation
+                    user.setActivationKey(RandomUtil.generateKey());
+                    user.setActivationDate(Instant.now());
+                    log.debug("Updated email for User: {}", principal.id());
+                    return user;
+                })
+                .orElseThrow(UserNotFoundException::new);
     }
 
     /**
@@ -314,20 +390,17 @@ public class UserService {
         // Initially set user as inactive
         newUser.setActivated(false);
         // Generate a unique activation key
-        newUser.setActivationKey(RandomUtil.generateActivationKey());
+        newUser.setActivationKey(RandomUtil.generateKey());
+        newUser.setActivationDate(Instant.now());
         // Assign default user authority
         var defaultAuthority = new Authority();
         defaultAuthority.setName(AuthoritiesConstants.USER);
         Set<Authority> authorities = Set.of(defaultAuthority);
         newUser.setAuthorities(authorities);
-
         // Save the new user to the database
         newUser = userRepository.save(newUser);
 
-        // Log user creation for debugging
         log.debug("Created Information for User: {}", newUser);
-
-        // Return the newly created user
         return newUser;
     }
 
@@ -364,44 +437,6 @@ public class UserService {
                 })
                 .map(userRepository::save)
                 .orElseThrow(UserNotFoundException::new);
-    }
-
-    /**
-     * Marks a user for deletion by setting a deletion timestamp.
-     *
-     * <p>
-     * This method does not immediately delete the user from the database. Instead,
-     * it sets a deletion timestamp, which can be used by a scheduled task to
-     * perform actual deletion after a certain grace period. This approach allows
-     * for potential recovery of user accounts and ensures that any related data can
-     * be handled appropriately before permanent deletion.
-     *
-     * @param id the ID of the user to be marked for deletion
-     */
-    public void deleteUser(Long id) {
-        userRepository
-                .markForDeletion(id, Instant.now());
-    }
-
-    /**
-     * Scheduled task to permanently delete users that have been marked for deletion
-     * and have exceeded the grace period.
-     *
-     * <p>
-     * This method runs at a fixed interval (e.g., daily) and checks for users that
-     * have a deletion timestamp older than a specified cutoff date (e.g., 30 days).
-     * It then permanently deletes those users from the database. This ensures that
-     * user accounts are not immediately removed, allowing for potential recovery if
-     * needed.
-     */
-    @Scheduled(cron = "0 0 3 * * ?") // Every day at 3 AM
-    public void removeDeletedUsers() {
-        Instant cutoffDate = Instant.now().minus(30, ChronoUnit.DAYS);
-        List<Long> ids = userRepository.findIdsByDeletedDateBefore(cutoffDate);
-        if (!ids.isEmpty()) {
-            log.debug("Deleting users with IDs: {}", ids);
-            userRepository.deleteAllById(ids);
-        }
     }
 
     public User requestAuthority(String authorityName) {
@@ -484,6 +519,44 @@ public class UserService {
                     return user;
                 })
                 .ifPresent(userRepository::save);
+    }
+
+    /**
+     * Marks a user for deletion by setting a deletion timestamp.
+     *
+     * <p>
+     * This method does not immediately delete the user from the database. Instead,
+     * it sets a deletion timestamp, which can be used by a scheduled task to
+     * perform actual deletion after a certain grace period. This approach allows
+     * for potential recovery of user accounts and ensures that any related data can
+     * be handled appropriately before permanent deletion.
+     *
+     * @param id the ID of the user to be marked for deletion
+     */
+    public void deleteUser(Long id) {
+        userRepository
+                .markForDeletion(id, Instant.now());
+    }
+
+    /**
+     * Scheduled task to permanently delete users that have been marked for deletion
+     * and have exceeded the grace period.
+     *
+     * <p>
+     * This method runs at a fixed interval (e.g., daily) and checks for users that
+     * have a deletion timestamp older than a specified cutoff date (e.g., 30 days).
+     * It then permanently deletes those users from the database. This ensures that
+     * user accounts are not immediately removed, allowing for potential recovery if
+     * needed.
+     */
+    @Scheduled(cron = "0 0 3 * * ?") // Every day at 3 AM
+    public void removeDeletedUsers() {
+        Instant cutoffDate = Instant.now().minus(30, ChronoUnit.DAYS);
+        List<Long> ids = userRepository.findIdsByDeletedDateBefore(cutoffDate);
+        if (!ids.isEmpty()) {
+            log.debug("Deleting users with IDs: {}", ids);
+            userRepository.deleteAllById(ids);
+        }
     }
 
 }

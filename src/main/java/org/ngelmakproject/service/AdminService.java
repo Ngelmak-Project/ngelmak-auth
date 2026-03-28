@@ -127,28 +127,6 @@ public class AdminService {
     }
 
     /**
-     * Initiates password reset request for a user.
-     * <p>
-     * Generates a reset key for an activated user.
-     *
-     * @param email User's email address
-     * @return Optional of user with reset key
-     */
-    public User requestPasswordReset(String email) {
-        log.debug("Request to reset user with email {}", email);
-        return userRepository
-                .findOneByEmailIgnoreCase(email)
-                .filter(User::isActivated)
-                .map(user -> {
-                    user.setResetKey(RandomUtil.generateResetKey());
-                    user.setResetDate(Instant.now());
-                    return user;
-                })
-                .map(userRepository::save)
-                .orElseThrow(UserNotFoundException::new);
-    }
-
-    /**
      * Certificate user account.
      *
      * @param certificationDTO user to update.

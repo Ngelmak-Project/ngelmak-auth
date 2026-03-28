@@ -9,6 +9,7 @@ import org.ngelmakproject.web.rest.dto.AuthorityRequestDTO;
 import org.ngelmakproject.web.rest.dto.PasswordChangeDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
 import org.ngelmakproject.web.rest.dto.UserUpdateDTO;
+import org.ngelmakproject.web.rest.errors.AuthorityNotFoundException;
 import org.ngelmakproject.web.rest.errors.EmailAlreadyUsedException;
 import org.ngelmakproject.web.rest.errors.InvalidPasswordException;
 import org.ngelmakproject.web.rest.errors.LoginAlreadyUsedException;
@@ -23,7 +24,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -69,8 +69,8 @@ public class UserResource {
      * {@code GET  /profile} : get the current user.
      *
      * @return the current user.
-     * @throws RuntimeException {@code 500 (Internal Server Error)} if the user
-     *                          couldn't be returned.
+     * @throws UserNotFoundException {@code 404 (Resource Not Found)} If the user
+     *                               couldn't be returned.
      */
     @GetMapping("/profile")
     public ResponseEntity<UserDTO> getUser() {
@@ -82,9 +82,9 @@ public class UserResource {
      * {@code PUT  /update} : update the current user information.
      *
      * @param userDTO the current user information.
-     * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} if the email is
+     * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} If the email is
      *                                   already used.
-     * @throws RuntimeException          {@code 500 (Internal Server Error)} if the
+     * @throws UserNotFoundException     {@code 404 (Resource Not Found)} If the
      *                                   user login wasn't found.
      */
     @PutMapping("/update")
@@ -95,23 +95,10 @@ public class UserResource {
     }
 
     /**
-     * {@code GET  /users/activate} : activate the registered user.
-     *
-     * @param key the activation key.
-     * @throws RuntimeException {@code 500 (Internal Server Error)} if the user
-     *                          couldn't be activated.
-     */
-    @GetMapping("/activate")
-    public void activateUser(@RequestParam(value = "key") String key) {
-        log.debug("REST request to activate User's email");
-        userService.activateRegistration(key);
-    }
-
-    /**
      * {@code POST  /change-password} : changes the current user's password.
      *
      * @param passwordChangeDto current and new password.
-     * @throws InvalidPasswordException {@code 400 (Bad Request)} if the new
+     * @throws InvalidPasswordException {@code 400 (Bad Request)} If the new
      *                                  password is incorrect.
      */
     @PostMapping("/change-password")
@@ -121,16 +108,18 @@ public class UserResource {
     }
 
     /**
-     * REST endpoint to update the current user's email address.
+     * {@code PUT  /email} : REST endpoint to update the current user's email
+     * address.
      *
      * @param emailUpdateDTO DTO containing the new email address
      * @return ResponseEntity with the updated UserDTO
-     * @throws EmailAlreadyUsedException If the email is already registered by
-     *                                   another user
-     * @throws UserNotFoundException     If no user is found for the current
-     *                                   authentication context
+     * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} If the email is
+     *                                   already registered by another user
+     * @throws UserNotFoundException     {@code 404 (Resource Not Found)} If no user
+     *                                   is found for the current authentication
+     *                                   context
      */
-    @PostMapping("/update-email")
+    @PutMapping("/email")
     public ResponseEntity<UserDTO> updateEmail(@RequestBody EmailUpdateDTO emailUpdateDTO) {
         log.debug("REST request to update User's email : {}", emailUpdateDTO.email());
         User user = userService.updateEmail(emailUpdateDTO.email());
@@ -138,16 +127,16 @@ public class UserResource {
     }
 
     /**
-     * REST endpoint to update the current user's login.
+     * {@code PUT /login} : Updates the current user's login.
      *
      * @param loginUpdateDTO DTO containing the new login
      * @return ResponseEntity with the updated UserDTO
-     * @throws LoginAlreadyUsedException If the login is already taken by another
-     *                                   user
-     * @throws UserNotFoundException     If no user is found for the current
-     *                                   authentication context
+     * @throws LoginAlreadyUsedException If the login is already taken
+     * @throws UserNotFoundException     {@code 404 (Resource Not Found)} If no user
+     *                                   is found for the current authentication
+     *                                   context
      */
-    @PostMapping("/update-login")
+    @PutMapping("/login")
     public ResponseEntity<UserDTO> updateLogin(@RequestBody LoginUpdateDTO loginUpdateDTO) {
         log.debug("REST request to update User's login : {}", loginUpdateDTO.login());
         User user = userService.updateLogin(loginUpdateDTO.login());
@@ -155,12 +144,15 @@ public class UserResource {
     }
 
     /**
-     * REST endpoint to request a new authority for the current user.
+     * {@code POST /authorities/request} : Endpoint to request a new authority for
+     * the current
+     * user.
      *
      * @param authorityName the name of the authority to request
      * @param motivation    the motivation for requesting the authority
      * @return the created AuthorityRequest
-     * @throws RuntimeException if the authority request could not be created
+     * @throws AuthorityNotFoundException {@code 404 (Resource Not Found)} If the
+     *                                    authority request could not be created
      */
     @PostMapping("/authorities/request")
     public AuthorityRequest requestAuthority(@RequestBody AccessApprovalDTO authorityRequestDTO) {
@@ -170,12 +162,11 @@ public class UserResource {
     }
 
     /**
-     * REST endpoint to get the current user's authority requests.
+     * {@code GET /authorities/requests} : Endpoint to get the current user's
+     * authority requests.
      *
      * @return a list of AuthorityRequestDTO representing the current user's
      *         authority requests
-     * 
-     * @throws RuntimeException if the authority requests could not be retrieved
      */
     @GetMapping("/authorities/requests")
     public ResponseEntity<List<AuthorityRequestDTO>> getAuthorityRequests() {
