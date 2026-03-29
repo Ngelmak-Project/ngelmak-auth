@@ -139,7 +139,7 @@ public class User implements Serializable {
     /* Timestamp indicating when the user's certification was granted. */
     @JsonIgnore
     @Column(name = "certified_date")
-    private Instant certifiedDate;
+    private Instant certifiedDate = null;
 
     /* Current certification status of the user. */
     @Enumerated(EnumType.STRING)

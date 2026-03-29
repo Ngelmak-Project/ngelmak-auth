@@ -28,16 +28,20 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller for managing the current user's account.
- * /api
- * └── /user # User-level secured endpoints
- * │ ├── GET /profile
- * │ ├── PUT /update
- * │ ├── PUT /upload-avatar
- * │ ├── POST /change-password
- * │ ├── POST /update-email
- * │ ├── POST /authorities/request
- * │ ├── GET /authorities/requests
- * │ └── POST /certifications
+ * 
+ * <p>
+ * Base path: /api/user/
+ * 
+ * - /api
+ * - └── /user # User-level secured endpoints
+ * - │ ├── GET /profile
+ * - │ ├── PUT /update
+ * - │ ├── PUT /upload-avatar
+ * - │ ├── POST /change-password
+ * - │ ├── POST /update-email
+ * - │ ├── POST /authorities/request
+ * - │ ├── GET /authorities/requests
+ * - │ └── POST /certifications
  */
 @RestController
 @RequestMapping("/api/user")

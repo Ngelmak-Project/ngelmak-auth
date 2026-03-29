@@ -30,18 +30,22 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller for managing user accounts.
- * /api
- * └── /admin # Admin-level secured endpoints
- * │ ├── /users
- * │ │ ├── GET / # List all users
- * │ │ ├── GET /{id} # Get user details
- * │ │ └── DELETE /{id} # Delete user
- * │ │
- * │ └── /management
- * │ │ ├── GET /contacts # Get user feedback contacts
- * │ │ ├── GET /audits
- * │ │ ├── GET /logs
- * │ │ └── GET /health
+ * 
+ * <p>
+ * Base path: /api/admin/
+ * 
+ * - /api
+ * - └── /admin # Admin-level secured endpoints
+ * - │ ├── /users
+ * - │ │ ├── GET / # List all users
+ * - │ │ ├── GET /{id} # Get user details
+ * - │ │ └── DELETE /{id} # Delete user
+ * - │ │
+ * - │ └── /management
+ * - │ │ ├── GET /contacts # Get user feedback contacts
+ * - │ │ ├── GET /audits
+ * - │ │ ├── GET /logs
+ * - │ │ └── GET /health
  */
 @RestController
 @RequestMapping("/api/admin")

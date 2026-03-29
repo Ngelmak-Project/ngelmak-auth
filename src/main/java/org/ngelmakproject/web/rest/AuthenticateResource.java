@@ -4,10 +4,10 @@ import java.util.Optional;
 
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.service.AuthenticateService;
-import org.ngelmakproject.service.UserService;
 import org.ngelmakproject.web.rest.dto.LoginRequestDTO;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
+import org.ngelmakproject.web.rest.errors.UserAlreadyActivatedException;
 import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * - │ │ ├── POST /authenticate
  * - │ │ ├── POST /register
  * - │ │ ├── POST /register
- * - │ │ ├── GET /activate?key= # GET because it's a link
+ * - │ │ ├── GET /activate?key=...
+ * - │ │ ├── POST /activate/resend
  * - │ │ ├── POST /password-reset/init
  * - │ │ └── POST /password-reset/finish
  * - │ │
@@ -52,11 +53,9 @@ public class AuthenticateResource {
     private String applicationName;
 
     private final AuthenticateService authService;
-    private final UserService userService;
 
-    public AuthenticateResource(AuthenticateService authService, UserService userService) {
+    public AuthenticateResource(AuthenticateService authService) {
         this.authService = authService;
-        this.userService = userService;
     }
 
     /**
@@ -104,7 +103,7 @@ public class AuthenticateResource {
     public ResponseEntity<UserDTO> register(
             @RequestBody RegisterRequestDTO userDTO) {
         log.debug("REST request to register a new User : {}", userDTO);
-        User newUser = userService.register(userDTO);
+        User newUser = authService.register(userDTO);
         return ResponseEntity.ok()
                 .body(UserDTO.from(newUser));
     }
@@ -121,10 +120,24 @@ public class AuthenticateResource {
     @GetMapping("/auth/activate")
     public void activateUser(@RequestParam String key) {
         log.debug("REST request to activate User's email");
-        userService.activateUserByKey(key);
+        authService.activateUserByKey(key);
     }
 
-    private record RequestPasswordResetDTO(String email) {
+    private record EmailResetDTO(String email) {
+    }
+
+    /**
+     * {@code POST  /auth/activate/resend} : Resends the activation email to the
+     * user.
+     *
+     * @param emailResetDTO the user's email address.
+     * @throws UserAlreadyActivatedException {@code 400 (Bad Request)} If the user
+     *                                       is already activated.
+     */
+    @PostMapping("/auth/activate/resend")
+    public void resendActivation(@RequestBody EmailResetDTO emailResetDTO) {
+        log.debug("REST request to resend activation email for {}", emailResetDTO.email);
+        authService.resendActivation(emailResetDTO.email);
     }
 
     /**
@@ -135,9 +148,9 @@ public class AuthenticateResource {
      * @param email the user's email address
      */
     @PostMapping("/auth/reset-password/init")
-    public void requestPasswordReset(@RequestBody RequestPasswordResetDTO resetDTO) {
+    public void requestPasswordReset(@RequestBody EmailResetDTO resetDTO) {
         log.debug("REST request to initiate password reset for {}", resetDTO.email);
-        userService.requestPasswordReset(resetDTO.email);
+        authService.requestPasswordReset(resetDTO.email);
     }
 
     private record CompletePasswordResetDTO(String key, String newPassword) {
@@ -154,7 +167,7 @@ public class AuthenticateResource {
     @PostMapping("/auth/reset-password/finish")
     public void completePasswordReset(@RequestBody CompletePasswordResetDTO resetDTO) {
         log.debug("REST request to complete password reset : {}", resetDTO);
-        userService.completePasswordReset(resetDTO.key, resetDTO.newPassword);
+        authService.completePasswordReset(resetDTO.key, resetDTO.newPassword);
     }
 
     // SUPPORT
