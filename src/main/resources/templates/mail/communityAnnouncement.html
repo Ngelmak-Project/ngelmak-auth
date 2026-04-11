@@ -1,0 +1,54 @@
+<p>Bonjour<span th:if="${firstName}"> <strong th:text="${firstName}"></strong></span>,</p>
+
+<p>
+  Nous avons une nouvelle annonce importante concernant
+  <strong th:text="${associationName}"></strong>.
+</p>
+
+<p th:text="${announcementIntro}">
+  <!-- Exemple : "Une nouvelle étape vient d'être franchie dans le développement du projet." -->
+</p>
+
+<div
+  style="
+    margin: 25px 0;
+    padding: 18px;
+    border-radius: 8px;
+    background: #f5f7fb;
+    border: 1px solid #e2e6ef;
+  "
+>
+  <h3
+    style="
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #0d1b2a;
+    "
+    th:text="${announcementTitle}"
+  >
+    <!-- Exemple : "Lancement d'une nouvelle fonctionnalité" -->
+  </h3>
+
+  <p style="margin: 0; line-height: 1.6" th:text="${announcementBody}">
+    <!-- Exemple : "Nous introduisons aujourd'hui un nouvel espace dédié aux contributions longues..." -->
+  </p>
+</div>
+
+<p th:text="${announcementDetails}">
+  <!-- Exemple : "Cette évolution s'inscrit dans notre volonté de renforcer l'autonomie et la participation collective." -->
+</p>
+
+<p>
+  Pour en savoir plus ou participer à la discussion, vous pouvez accéder à la
+  plateforme via le bouton ci-dessous.
+</p>
+
+<a th:href="${actionUrl}" class="button" th:text="${actionLabel}">
+  <!-- Exemple : "Voir l'annonce" -->
+</a>
+
+<p style="margin-top: 30px">
+  Merci de faire partie de cette aventure collective. Ensemble, nous
+  construisons un espace souverain, éthique et réellement utile.
+</p>

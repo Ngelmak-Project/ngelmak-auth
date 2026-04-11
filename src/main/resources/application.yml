@@ -1,6 +1,14 @@
 spring:
   application:
     name: "Ngelmak Project"
+    support:
+      email: support@ngelmak.org
+      phone: +33 1 23 45 67 89
+      address: 123 Avenue de la République, Lyon, France
+      facebook-url: "#"
+      twitter-url: "#"
+      instagram-url: "#"
+
 
   profiles:
     active: dev # or prod
@@ -66,6 +74,12 @@ jwt-secret-key: NzgwODE3NjExMzk1MDFjYzc2NmRjMmM2Yjc0ZTYyMGUxODM3ZThjMzk0ZTliMTE0
 jwt-expiration-in-seconds: 86400 # 24 hours
 jwt-expiration-in-seconds-for-remember-me: 4406400 # 15 days
 
+
+# Frontend configuration
+frontend:
+  api:
+    url: http://localhost:4200
+
 file:
   upload-directory:
     location: ./ngelmak-directory/files
@@ -75,3 +89,10 @@ file:
   private:
     access:
       location: /resources/files
+
+spring.mail.host: smtp.gmail.com
+spring.mail.port: 587
+spring.mail.username: youssouphfaye@esp.sn
+spring.mail.password: liqu xkee cbip youk 
+spring.mail.properties.mail.smtp.auth: true
+spring.mail.properties.mail.smtp.starttls.enable: true

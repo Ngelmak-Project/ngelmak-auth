@@ -1,0 +1,67 @@
+<p>Bonjour<span th:if="${firstName}"> <strong th:text="${firstName}"></strong></span>,</p>
+
+<p>
+  Nous vous informons qu'une mesure de suspension temporaire a été appliquée à
+  votre compte sur <strong th:text="${associationName}"></strong>.
+</p>
+
+<p>
+  Cette décision a été prise après examen de contenus ou comportements ne
+  respectant pas les principes essentiels du projet : responsabilité, respect
+  mutuel et qualité des échanges.
+</p>
+
+<div
+  style="
+    margin: 25px 0;
+    padding: 18px;
+    border-radius: 8px;
+    background: #f5f7fb;
+    border: 1px solid #e2e6ef;
+  "
+>
+  <h3
+    style="
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #0d1b2a;
+    "
+  >
+    Détails de la suspension
+  </h3>
+
+  <p style="margin: 0; line-height: 1.6">
+    <strong>Durée :</strong>
+    <span th:text="${suspensionDuration}"></span>
+    <!-- Exemple : "48 heures", "7 jours" -->
+  </p>
+
+  <p style="margin: 8px 0 0 0; line-height: 1.6">
+    <strong>Motif :</strong>
+    <span th:text="${suspensionReason}"></span>
+    <!-- Exemple : "Violations répétées des règles de civilité" -->
+  </p>
+
+  <p style="margin: 8px 0 0 0; line-height: 1.6">
+    <strong>Contenu concerné :</strong>
+    <span th:text="${contentType}"></span>
+    <!-- Exemple : "Poste", "Commentaire" -->
+  </p>
+</div>
+
+<p th:text="${additionalNotes}">
+  <!-- Exemple : "Cette mesure vise à protéger la communauté et à préserver un espace d'échange sain." -->
+</p>
+
+<p>
+  Si vous estimez que cette décision est injustifiée ou si vous souhaitez
+  demander un réexamen, vous pouvez utiliser le bouton ci-dessous.
+</p>
+
+<a th:href="${appealUrl}" class="button">Demander une révision</a>
+
+<p style="margin-top: 30px">
+  Merci de votre compréhension. Nous comptons sur votre engagement pour
+  maintenir un espace respectueux et fidèle aux valeurs du projet.
+</p>

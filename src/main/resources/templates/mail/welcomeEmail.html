@@ -1,0 +1,17 @@
+<p>Bonjour<span th:if="${firstName}"> <strong th:text="${firstName}"></strong></span>,</p>
+
+<p>
+  Votre compte est maintenant activé. Bienvenue dans
+  <strong th:text="${associationName}"></strong> — un espace souverain construit
+  pour renforcer l'autonomie, la solidarité et la contribution collective.
+</p>
+
+<p>
+  Vous pouvez dès maintenant explorer la plateforme, participer, partager vos
+  idées et contribuer à la construction d'un espace numérique africain
+  indépendant.
+</p>
+
+<a th:href="${loginUrl}" class="button">Accéder à mon compte</a>
+
+<p style="margin-top: 30px">Nous sommes ravis de vous compter parmi nous.</p>

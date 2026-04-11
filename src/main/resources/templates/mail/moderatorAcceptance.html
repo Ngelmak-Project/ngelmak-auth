@@ -1,0 +1,67 @@
+<p>Bonjour<span th:if="${firstName}"> <strong th:text="${firstName}"></strong></span>,</p>
+
+<p>
+  Nous avons le plaisir de vous informer que votre demande pour rejoindre
+  l'équipe de modération de <strong th:text="${associationName}"></strong> a été
+  acceptée.
+</p>
+
+<p>
+  Votre engagement, votre sens des responsabilités et votre compréhension des
+  valeurs du projet ont été particulièrement appréciés. En tant que modérateur,
+  vous jouerez un rôle essentiel dans la préservation d'un espace souverain,
+  respectueux et constructif pour l'ensemble de la communauté.
+</p>
+
+<div
+  style="
+    margin: 25px 0;
+    padding: 18px;
+    border-radius: 8px;
+    background: #f5f7fb;
+    border: 1px solid #e2e6ef;
+  "
+>
+  <h3
+    style="
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: #0d1b2a;
+    "
+  >
+    Informations importantes
+  </h3>
+
+  <p style="margin: 0; line-height: 1.6">
+    <strong>Rôle :</strong>
+    Modérateur communautaire
+  </p>
+
+  <p style="margin: 8px 0 0 0; line-height: 1.6">
+    <strong>Accès :</strong>
+    Vos permissions de modération sont désormais actives.
+  </p>
+
+  <p style="margin: 8px 0 0 0; line-height: 1.6">
+    <strong>Principes clés :</strong>
+    Respect, impartialité, responsabilité collective.
+  </p>
+</div>
+
+<p th:text="${additionalNotes}">
+  <!-- Exemple : "Vous recevrez prochainement un guide détaillé sur les procédures de modération." -->
+</p>
+
+<p>
+  Pour accéder à votre espace de modération, cliquez sur le bouton ci-dessous.
+</p>
+
+<a th:href="${moderationPanelUrl}" class="button"
+  >Accéder au panneau de modération</a
+>
+
+<p style="margin-top: 30px">
+  Merci pour votre engagement et votre volonté de contribuer activement à la
+  qualité et à la souveraineté de notre espace communautaire.
+</p>
