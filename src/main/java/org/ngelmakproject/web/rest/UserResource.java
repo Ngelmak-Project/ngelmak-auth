@@ -5,6 +5,7 @@ import java.util.List;
 import org.ngelmakproject.domain.AuthorityRequest;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.service.UserService;
+import org.ngelmakproject.service.email.MailService;
 import org.ngelmakproject.web.rest.dto.AuthorityRequestDTO;
 import org.ngelmakproject.web.rest.dto.PasswordChangeDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
@@ -38,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
  * - │ ├── PUT /update
  * - │ ├── PUT /upload-avatar
  * - │ ├── POST /change-password
- * - │ ├── POST /update-email
+ * - │ ├── PUT /email
  * - │ ├── POST /authorities/request
  * - │ ├── GET /authorities/requests
  * - │ └── POST /certifications
@@ -53,14 +54,16 @@ public class UserResource {
     @Value("${spring.application.name}")
     private String applicationName;
 
-    // DTO for authority request
-    private record AccessApprovalDTO(String authorityName, String motivation) {
+    private final UserService userService;
+    private final MailService mailService;
+
+    public UserResource(UserService userService, MailService mailService) {
+        this.userService = userService;
+        this.mailService = mailService;
     }
 
-    private final UserService userService;
-
-    public UserResource(UserService userService) {
-        this.userService = userService;
+    // DTO for authority request
+    private record AccessApprovalDTO(String authorityName, String motivation) {
     }
 
     public record LoginUpdateDTO(String login) {
@@ -122,11 +125,15 @@ public class UserResource {
      * @throws UserNotFoundException     {@code 404 (Resource Not Found)} If no user
      *                                   is found for the current authentication
      *                                   context
+     * @apiNote An email verification message is sent to the new email address with
+     *          a link to confirm the change via
+     *          {@link MailService#sendEmailVerificationEmail(User)}
      */
     @PutMapping("/email")
     public ResponseEntity<UserDTO> updateEmail(@RequestBody EmailUpdateDTO emailUpdateDTO) {
         log.debug("REST request to update User's email : {}", emailUpdateDTO.email());
         User user = userService.updateEmail(emailUpdateDTO.email());
+        mailService.sendEmailVerificationEmail(user);
         return ResponseEntity.ok(UserDTO.from(user));
     }
 
@@ -149,20 +156,27 @@ public class UserResource {
 
     /**
      * {@code POST /authorities/request} : Endpoint to request a new authority for
-     * the current
-     * user.
+     * the current user.
      *
      * @param authorityName the name of the authority to request
      * @param motivation    the motivation for requesting the authority
-     * @return the created AuthorityRequest
-     * @throws AuthorityNotFoundException {@code 404 (Resource Not Found)} If the
-     *                                    authority request could not be created
+     * @return the created {@link AuthorityRequest}
+     * @throws AuthorityNotFoundException {@code 404 (Resource Not Found)} if the
+     *                                    authority could not be found or the
+     *                                    request could not be created
+     * 
+     * @apiNote An acknowledgment email is sent to the user confirming receipt of
+     *          their authority (moderator) request via
+     *          {@link MailService#sendModeratorRequestAcknowledgmentEmail(User)}
      */
     @PostMapping("/authorities/request")
     public AuthorityRequest requestAuthority(@RequestBody AccessApprovalDTO authorityRequestDTO) {
         log.debug("REST request to request authority {} with motivation {}", authorityRequestDTO.authorityName(),
                 authorityRequestDTO.motivation());
-        return userService.requestAuthority(authorityRequestDTO.authorityName(), authorityRequestDTO.motivation());
+        AuthorityRequest authorityRequest = userService.requestAuthority(authorityRequestDTO.authorityName(),
+                authorityRequestDTO.motivation());
+        mailService.sendModeratorRequestAcknowledgmentEmail(authorityRequest.getUser());
+        return authorityRequest;
     }
 
     /**

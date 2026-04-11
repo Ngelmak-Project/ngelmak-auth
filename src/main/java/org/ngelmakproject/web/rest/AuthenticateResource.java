@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.service.AuthenticateService;
+import org.ngelmakproject.service.email.MailService;
 import org.ngelmakproject.web.rest.dto.LoginRequestDTO;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
@@ -53,9 +54,11 @@ public class AuthenticateResource {
     private String applicationName;
 
     private final AuthenticateService authService;
+    private final MailService mailService;
 
-    public AuthenticateResource(AuthenticateService authService) {
+    public AuthenticateResource(AuthenticateService authService, MailService mailService) {
         this.authService = authService;
+        this.mailService = mailService;
     }
 
     /**
@@ -104,6 +107,7 @@ public class AuthenticateResource {
             @RequestBody RegisterRequestDTO userDTO) {
         log.debug("REST request to register a new User : {}", userDTO);
         User newUser = authService.register(userDTO);
+        mailService.sendActivationEmail(newUser);
         return ResponseEntity.ok()
                 .body(UserDTO.from(newUser));
     }
@@ -116,11 +120,13 @@ public class AuthenticateResource {
      * @param key the activation key.
      * @throws UserNotFoundException {@code 500 (Internal Server Error)} if the user
      *                               couldn't be activated.
+     * @apiNote After successful activation, a welcome email is sent to the user.
      */
     @GetMapping("/auth/activate")
     public void activateUser(@RequestParam String key) {
         log.debug("REST request to activate User's email");
-        authService.activateUserByKey(key);
+        User user = authService.activateUserByKey(key);
+        mailService.sendWelcomeEmail(user);
     }
 
     private record EmailResetDTO(String email) {
@@ -133,11 +139,14 @@ public class AuthenticateResource {
      * @param emailResetDTO the user's email address.
      * @throws UserAlreadyActivatedException {@code 400 (Bad Request)} If the user
      *                                       is already activated.
+     * @apiNote If the email is associated with an existing account that is not yet
+     *          activated, a new activation email will be sent.
      */
     @PostMapping("/auth/activate/resend")
     public void resendActivation(@RequestBody EmailResetDTO emailResetDTO) {
         log.debug("REST request to resend activation email for {}", emailResetDTO.email);
-        authService.resendActivation(emailResetDTO.email);
+        authService.resendActivation(emailResetDTO.email)
+                .ifPresent(mailService::sendActivationEmail);
     }
 
     /**
@@ -146,11 +155,15 @@ public class AuthenticateResource {
      * generating a temporary key and sending it to the user's email address.
      *
      * @param email the user's email address
+     * @apiNote If the email is associated with an existing account, a password
+     *          reset email will be sent containing a temporary key for resetting
+     *          the password.
      */
     @PostMapping("/auth/reset-password/init")
     public void requestPasswordReset(@RequestBody EmailResetDTO resetDTO) {
         log.debug("REST request to initiate password reset for {}", resetDTO.email);
-        authService.requestPasswordReset(resetDTO.email);
+        authService.requestPasswordReset(resetDTO.email)
+                .ifPresent(mailService::sendPasswordResetEmail);
     }
 
     private record CompletePasswordResetDTO(String key, String newPassword) {

@@ -1,5 +1,6 @@
 package org.ngelmakproject.service;
 
+import java.lang.foreign.Linker.Option;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
@@ -195,11 +196,11 @@ public class AuthenticateService {
      * @param email the email address of the user
      * @throws UserAlreadyActivatedException if the user is already activated.
      */
-    public void resendActivation(String email) {
+    public Optional<User> resendActivation(String email) {
         log.debug("Request to resend activation email for {}", email);
-        userRepository
+        return userRepository
                 .findOneByEmailIgnoreCase(email) // Only resend if the user exists and is not activated
-                .ifPresent(user -> {
+                .map(user -> {
                     if (user.isActivated()) {
                         throw new UserAlreadyActivatedException();
                     }
@@ -215,6 +216,7 @@ public class AuthenticateService {
                         log.debug("Generated new activation key for user {}: {}", email, user.getActivationKey());
                     }
                     userRepository.save(user);
+                    return user;
                 });
     }
 
@@ -244,11 +246,11 @@ public class AuthenticateService {
      *
      * @param email the email address of the user requesting a password reset
      */
-    public void requestPasswordReset(String email) {
+    public Optional<User> requestPasswordReset(String email) {
         log.debug("Request to reset user with email {}", email);
-        userRepository
+        return userRepository
                 .findOneByEmailIgnoreCaseAndActivatedIsTrue(email)
-                .ifPresent(user -> {
+                .map(user -> {
                     boolean hasValidKey = user.getResetKey() != null &&
                             user.getResetDate() != null &&
                             user.getResetDate().isAfter(Instant.now().minus(30, ChronoUnit.MINUTES));
@@ -262,6 +264,7 @@ public class AuthenticateService {
                     }
 
                     userRepository.save(user);
+                    return user;
                 });
     }
 
@@ -273,9 +276,9 @@ public class AuthenticateService {
      * @param key         Password reset key
      * @param newPassword New password to set
      */
-    public void completePasswordReset(String key, String newPassword) {
+    public Optional<User> completePasswordReset(String key, String newPassword) {
         log.debug("Complete User password reset with key {}", key);
-        userRepository
+        return userRepository
                 .findOneByResetKey(key)
                 .filter(user -> user.getResetDate().isAfter(Instant.now().minus(30, ChronoUnit.MINUTES)))
                 .map(user -> {
@@ -284,8 +287,7 @@ public class AuthenticateService {
                     user.setResetDate(null);
                     return user;
                 })
-                .map(userRepository::save)
-                .orElseThrow(UserNotFoundException::new);
+                .map(userRepository::save);
     }
 
     /**

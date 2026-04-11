@@ -77,10 +77,14 @@
 		<!-- Includes JUnit, Mockito, AssertJ, Spring TestContext -->
 
 		<!-- Spring Boot starter for using Mail -->
-		<!-- <dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency> -->
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
 		<!-- Adds JavaMailSender and email configuration support -->
 
 		<!-- JJWT core libraries -->

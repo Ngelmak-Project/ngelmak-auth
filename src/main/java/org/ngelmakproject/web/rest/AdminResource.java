@@ -8,6 +8,7 @@ import org.ngelmakproject.domain.User;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.AuthoritiesConstants;
 import org.ngelmakproject.service.AdminService;
+import org.ngelmakproject.service.email.MailService;
 import org.ngelmakproject.web.rest.dto.ActiveUserDTO;
 import org.ngelmakproject.web.rest.dto.CertificationDTO;
 import org.ngelmakproject.web.rest.dto.PageDTO;
@@ -66,10 +67,12 @@ public class AdminResource {
 
 	private final AdminService adminService;
 	private final UserRepository userRepository;
+	private final MailService mailService;
 
-	public AdminResource(AdminService adminService, UserRepository userRepository) {
+	public AdminResource(AdminService adminService, UserRepository userRepository, MailService mailService) {
 		this.adminService = adminService;
 		this.userRepository = userRepository;
+		this.mailService = mailService;
 	}
 
 	/**
@@ -111,7 +114,8 @@ public class AdminResource {
 	 */
 	@PutMapping("/users/active")
 	public ResponseEntity<User> setActive(@RequestBody ActiveUserDTO activeUserDTO) {
-		log.debug("REST request to change active status of User : {} to {}", activeUserDTO.id(), activeUserDTO.isActive());
+		log.debug("REST request to change active status of User : {} to {}", activeUserDTO.id(),
+				activeUserDTO.isActive());
 		return ResponseEntity.ok(adminService.setActive(activeUserDTO.id(), activeUserDTO.isActive()));
 	}
 
@@ -122,13 +126,21 @@ public class AdminResource {
 	 * @param authorityNames the names of the authorities to grant
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
 	 *         the updated user.
+	 * @apiNote An email notification is sent to the user about the new authorities
+	 *          via
+	 *          {@link MailService#sendModeratorAcceptanceEmail(User)}
 	 */
 	@PutMapping("/users/grant-authorities")
 	public ResponseEntity<User> grantAuthorities(@RequestBody GrantAuthorityDTO grantAuthorityDTO) {
-		log.debug("REST request to grant authorities {} to User : {} with reason {}", grantAuthorityDTO.authorityNames(),
+		log.debug("REST request to grant authorities {} to User : {} with reason {}",
+				grantAuthorityDTO.authorityNames(),
 				grantAuthorityDTO.id(), grantAuthorityDTO.reason());
-		return ResponseEntity.ok(adminService.grantAuthorities(grantAuthorityDTO.id(), grantAuthorityDTO.authorityNames(),
-				grantAuthorityDTO.reason()));
+		User user = adminService.grantAuthorities(grantAuthorityDTO.id(), grantAuthorityDTO.authorityNames(),
+				grantAuthorityDTO.reason());
+		if (grantAuthorityDTO.authorityNames().contains(AuthoritiesConstants.MODERATOR)) {
+			mailService.sendModeratorAcceptanceEmail(user);
+		}
+		return ResponseEntity.ok(user);
 	}
 
 	/**
@@ -165,16 +177,23 @@ public class AdminResource {
 						authorityRequestDTO.reason()));
 	}
 
+	private record BlockUserDTO(Long id, String duration, String reason, String contentType,
+			Long appealId) {
+	}
+
 	/**
-	 * {@code PUT /admin/users/block/:id} : block the user with the given id.
+	 * {@code PUT /admin/users/block} : block the user.
 	 *
-	 * @param login the login of the user to delete.
+	 * @param blockUserDTO the DTO containing the user ID and suspension details.
 	 * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
 	 */
-	@PutMapping("/users/block/{id}")
-	public ResponseEntity<User> blockUser(@PathVariable("id") Long id) {
-		log.debug("REST request to block User : {}", id);
-		return ResponseEntity.ok(adminService.updateBlockStatus(id, true));
+	@PutMapping("/users/block")
+	public ResponseEntity<User> blockUser(@RequestBody BlockUserDTO blockUserDTO) {
+		log.debug("REST request to block User : {}", blockUserDTO.id());
+		User user = adminService.updateBlockStatus(blockUserDTO.id(), true);
+		mailService.sendSuspensionNoticeEmail(user, blockUserDTO.duration(), blockUserDTO.reason(),
+				blockUserDTO.contentType(), blockUserDTO.appealId());
+		return ResponseEntity.ok(user);
 	}
 
 	/**
