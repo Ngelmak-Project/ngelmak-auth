@@ -129,9 +129,9 @@ public class MailService {
 		context.getValues().forEach(thymeleaf::setVariable);
 
 		String html = templateEngine.process("mail/layout", thymeleaf);
-		
+		log.info("Generated HTML for email to {}: {}", to, html);
 		thymeleaf.getVariableNames().forEach(
-				name -> log.trace("{} = {}", name, thymeleaf.getVariable(name)));
+				name -> log.info("{} = {}", name, thymeleaf.getVariable(name)));
 
 		sendEmail(to, subject, html);
 	}

@@ -1,365 +1,284 @@
 <!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title th:text="${headerTitle}">Email</title>
 
     <style>
-      body,
-      table,
-      td,
-      a {
-        font-family: Arial, sans-serif;
-        text-size-adjust: 100%;
-      }
-
-      body {
-        margin: 0;
-        padding: 0;
-        background: #f4f4f7;
-        color: #333333;
-      }
-
-      @media (prefers-color-scheme: dark) {
+        body,
+        table,
+        td,
+        a {
+            font-family: Arial, sans-serif;
+            text-size-adjust: 100%;
+        }
+        
         body {
-          background: #1a1a1a !important;
-          color: #e5e5e5 !important;
+            margin: 0;
+            padding: 0;
+            background: #f4f4f7;
+            color: #333333;
         }
-
+        
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1a1a1a !important;
+                color: #e5e5e5 !important;
+            }
+            .content {
+                background: #2a2a2a !important;
+                color: #e5e5e5 !important;
+            }
+            a.button {
+                background: #0d3c91 !important;
+            }
+            .footer {
+                color: #bbbbbb !important;
+            }
+        }
+        
+        .wrapper {
+            width: 100%;
+            padding: 30px 0;
+        }
+        
         .content {
-          background: #2a2a2a !important;
-          color: #e5e5e5 !important;
+            max-width: 600px;
+            margin: auto;
+            background: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
         }
-
-        a.button {
-          background: #0d3c91 !important;
-        }
-
-        .footer {
-          color: #bbbbbb !important;
-        }
-      }
-
-      .wrapper {
-        width: 100%;
-        padding: 30px 0;
-      }
-
-      .content {
-        max-width: 600px;
-        margin: auto;
-        background: #ffffff;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      }
-
-      .body {
-        padding: 30px;
-        line-height: 1.6;
-      }
-
-      a.button {
-        display: inline-block;
-        padding: 12px 20px;
-        background: #004aad;
-        color: white !important;
-        text-decoration: none;
-        border-radius: 5px;
-        margin-top: 20px;
-      }
-
-      .footer {
-        padding: 25px;
-        text-align: center;
-        font-size: 12px;
-        color: #777;
-        background: #f4f4f7;
-      }
-
-      .footer a {
-        color: #004aad;
-        text-decoration: none;
-      }
-
-      .social-icons img {
-        width: 22px;
-        margin: 0 6px;
-        opacity: 0.8;
-      }
-
-      @media only screen and (max-width: 600px) {
-        .content {
-          width: 95% !important;
-        }
-
+        
         .body {
-          padding: 20px !important;
+            padding: 30px;
+            line-height: 1.6;
         }
-
-        .desktop-row {
-          display: none !important;
+        
+        a.button {
+            display: inline-block;
+            padding: 12px 20px;
+            background: #004aad;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
         }
-
-        .mobile-row {
-          display: table !important;
+        
+        .footer {
+            padding: 25px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            background: #f4f4f7;
         }
-      }
+        
+        .footer a {
+            color: #004aad;
+            text-decoration: none;
+        }
+        
+        .social-icons img {
+            width: 22px;
+            margin: 0 6px;
+            opacity: 0.8;
+        }
+        
+        @media only screen and (max-width: 600px) {
+            .content {
+                width: 95% !important;
+            }
+            .body {
+                padding: 20px !important;
+            }
+            .desktop-row {
+                display: none !important;
+            }
+            .mobile-row {
+                display: table !important;
+            }
+        }
     </style>
-  </head>
+</head>
 
-  <body>
+<body>
     <div style="display: none; opacity: 0; height: 0; width: 0">
-      [[${uniqueId}]]
+        [[${uniqueId}]]
     </div>
 
     <div class="wrapper">
-      <div class="content">
-        <!-- HEADER -->
-        <table
-          role="presentation"
-          width="100%"
-          cellspacing="0"
-          cellpadding="0"
-          border="0"
-          style="
+        <div class="content">
+            <!-- HEADER -->
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="
             background: linear-gradient(to bottom, #3f6fc9 0%, #f9fbff 100%);
-          "
-        >
-          <!-- DESKTOP VERSION: text left + logo right -->
-          <tr class="desktop-row">
-            <td align="center" style="padding: 0">
-              <table
-                role="presentation"
-                width="100%"
-                cellspacing="0"
-                cellpadding="0"
-                border="0"
-                style="max-width: 600px; margin: 0 auto"
-              >
-                <tr>
-                  <!-- TEXT CELL -->
-                  <td
-                    valign="middle"
-                    style="
+          ">
+                <!-- DESKTOP VERSION: text left + logo right -->
+                <tr class="desktop-row">
+                    <td align="center" style="padding: 0">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; margin: 0 auto">
+                            <tr>
+                                <!-- TEXT CELL -->
+                                <td valign="middle" style="
                       padding: 28px 30px;
                       text-align: left;
                       color: #0d1b2a;
                       width: 50%;
-                    "
-                  >
-                    <h1
-                      style="
+                    ">
+                                    <h1 style="
                         margin: 0;
                         font-size: 26px;
                         font-weight: 700;
                         color: #0d1b2a;
-                      "
-                    >
-                      Ngelmak
-                    </h1>
+                      ">
+                                        Ngelmak
+                                    </h1>
 
-                    <p
-                      style="
+                                    <p style="
                         margin: 10px 0 0 0;
                         font-size: 14px;
                         line-height: 1.5;
                         color: #0d1b2a;
-                      "
-                    >
-                      Un projet souverain pour renforcer l'autonomie et la
-                      solidarité africaines
-                    </p>
+                      ">
+                                        Un projet souverain pour renforcer l'autonomie et la solidarité africaines
+                                    </p>
 
-                    <p
-                      style="
+                                    <p style="
                         margin: 10px 0 0 0;
                         font-size: 12px;
                         opacity: 0.9;
                         line-height: 1.4;
                         color: #0d1b2a;
-                      "
-                    >
-                      Souverain • Éthique • Gratuit
-                    </p>
-                  </td>
+                      ">
+                                        Souverain • Éthique • Gratuit
+                                    </p>
+                                </td>
 
-                  <!-- LOGO CELL -->
-                  <td
-                    valign="middle"
-                    align="center"
-                    style="padding: 20px 30px; width: 50%"
-                  >
-                    <img
-                      src="cid:logo"
-                      alt="Logo"
-                      style="
+                                <!-- LOGO CELL -->
+                                <td valign="middle" align="center" style="padding: 20px 30px; width: 50%">
+                                    <img src="cid:logo" alt="Logo" style="
                         width: 110px;
                         max-width: 110px;
                         height: auto;
                         display: block;
-                      "
-                    />
-                  </td>
+                      " />
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
                 </tr>
-              </table>
-            </td>
-          </tr>
 
-          <!-- MOBILE VERSION: text centered on top + logo centered below -->
-          <tr class="mobile-row" style="display: none">
-            <td align="center" style="padding: 0">
-              <table
-                role="presentation"
-                width="100%"
-                cellspacing="0"
-                cellpadding="0"
-                border="0"
-                style="max-width: 600px; margin: 0 auto"
-              >
-                <!-- TEXT ROW -->
-                <tr>
-                  <td
-                    align="center"
-                    valign="middle"
-                    style="
+                <!-- MOBILE VERSION: text centered on top + logo centered below -->
+                <tr class="mobile-row" style="display: none">
+                    <td align="center" style="padding: 0">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; margin: 0 auto">
+                            <!-- TEXT ROW -->
+                            <tr>
+                                <td align="center" valign="middle" style="
                       padding: 28px 16px;
                       color: #0d1b2a;
                       text-align: center;
-                    "
-                  >
-                    <h1
-                      style="
+                    ">
+                                    <h1 style="
                         margin: 0;
                         font-size: 26px;
                         font-weight: 700;
                         color: #0d1b2a;
-                      "
-                    >
-                      Ngelmak
-                    </h1>
+                      ">
+                                        Ngelmak
+                                    </h1>
 
-                    <p
-                      style="
+                                    <p style="
                         margin: 10px 0 0 0;
                         font-size: 14px;
                         line-height: 1.5;
                         color: #0d1b2a;
-                      "
-                    >
-                      Un projet souverain pour renforcer l'autonomie et la
-                      solidarité africaines
-                    </p>
+                      ">
+                                        Un projet souverain pour renforcer l'autonomie et la solidarité africaines
+                                    </p>
 
-                    <p
-                      style="
+                                    <p style="
                         margin: 10px 0 0 0;
                         font-size: 12px;
                         opacity: 0.9;
                         line-height: 1.4;
                         color: #0d1b2a;
-                      "
-                    >
-                      Souverain • Éthique • Gratuit
-                    </p>
-                  </td>
-                </tr>
+                      ">
+                                        Souverain • Éthique • Gratuit
+                                    </p>
+                                </td>
+                            </tr>
 
-                <!-- LOGO ROW -->
-                <tr>
-                  <td
-                    align="center"
-                    valign="middle"
-                    style="padding: 0 16px 28px 16px"
-                  >
-                    <img
-                      src="cid:logo"
-                      alt="Logo"
-                      style="
+                            <!-- LOGO ROW -->
+                            <tr>
+                                <td align="center" valign="middle" style="padding: 0 16px 28px 16px">
+                                    <img src="cid:logo" alt="Logo" style="
                         width: 110px;
                         max-width: 110px;
                         height: auto;
                         display: block;
-                      "
-                    />
-                  </td>
+                      " />
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
                 </tr>
-              </table>
-            </td>
-          </tr>
 
-          <!-- TRI-COLOR ACCENT BAR -->
-          <tr>
-            <td style="padding: 0; margin: 0">
-              <table
-                role="presentation"
-                width="100%"
-                cellspacing="0"
-                cellpadding="0"
-                border="0"
-              >
+                <!-- TRI-COLOR ACCENT BAR -->
                 <tr>
-                  <td style="height: 4px; background: #4f7ecf"></td>
-                  <td style="height: 4px; background: #5fbf7a"></td>
-                  <td style="height: 4px; background: #e36a6a"></td>
+                    <td style="padding: 0; margin: 0">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                                <td style="height: 4px; background: #4f7ecf"></td>
+                                <td style="height: 4px; background: #5fbf7a"></td>
+                                <td style="height: 4px; background: #e36a6a"></td>
+                            </tr>
+                        </table>
+                    </td>
                 </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
+            </table>
 
-        <div class="body">
-          <div th:insert="${bodyTemplate}"></div>
-          <div
-            style="
+            <div class="body">
+                <div th:insert="~{${bodyTemplate}}"></div>
+                <div style="
               margin-top: 35px;
               padding-top: 20px;
               border-top: 1px solid #e2e6ef;
               color: #4a5568;
               font-size: 13px;
-            "
-          >
-            Cordialement,<br />
-            L'équipe de <strong th:text="${associationName}"></strong>
-          </div>
+            ">
+                    Cordialement,<br /> L'équipe de <strong th:text="${associationName}"></strong>
+                </div>
+            </div>
+
+            <div class="footer">
+                <p th:text="${associationName}"></p>
+
+                <p>
+                    <span th:text="${address}"></span><br />
+                    <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}"></a>
+                </p>
+
+                <div class="social-icons">
+                    <a th:href="${facebookUrl}" target="_blank"><img src="cid:facebook" /></a>
+                    <a th:href="${twitterUrl}" target="_blank"><img src="cid:twitter" /></a>
+                    <a th:href="${instagramUrl}" target="_blank"><img src="cid:instagram" /></a>
+                </div>
+
+                <p style="margin-top: 15px">
+                    © <span th:text="${year}"></span>
+                    <span th:text="${associationName}"></span>. All rights reserved.
+                </p>
+
+                <p style="font-size: 11px; color: #999">
+                    You received this email because you have an account with us. If you did not request this email, you can safely ignore it.
+                </p>
+            </div>
         </div>
-
-        <div class="footer">
-          <p th:text="${associationName}"></p>
-
-          <p>
-            <span th:text="${address}"></span><br />
-            <a
-              th:href="'mailto:' + ${supportEmail}"
-              th:text="${supportEmail}"
-            ></a>
-          </p>
-
-          <div class="social-icons">
-            <a th:href="${facebookUrl}" target="_blank"
-              ><img src="cid:facebook"
-            /></a>
-            <a th:href="${twitterUrl}" target="_blank"
-              ><img src="cid:twitter"
-            /></a>
-            <a th:href="${instagramUrl}" target="_blank"
-              ><img src="cid:instagram"
-            /></a>
-          </div>
-
-          <p style="margin-top: 15px">
-            © <span th:text="${year}"></span>
-            <span th:text="${associationName}"></span>. All rights reserved.
-          </p>
-
-          <p style="font-size: 11px; color: #999">
-            You received this email because you have an account with us. If you
-            did not request this email, you can safely ignore it.
-          </p>
-        </div>
-      </div>
     </div>
-  </body>
+</body>
+
 </html>
