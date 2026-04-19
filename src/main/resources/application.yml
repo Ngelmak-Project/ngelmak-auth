@@ -78,7 +78,7 @@ jwt-expiration-in-seconds-for-remember-me: 4406400 # 15 days
 # Frontend configuration
 frontend:
   api:
-    url: http://localhost:4200
+    url: ngelmak.org
 
 file:
   upload-directory:
