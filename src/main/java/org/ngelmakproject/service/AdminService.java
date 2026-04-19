@@ -21,7 +21,6 @@ import org.ngelmakproject.web.rest.dto.CertificationDTO;
 import org.ngelmakproject.web.rest.dto.PageDTO;
 import org.ngelmakproject.web.rest.errors.ResourceNotFoundException;
 import org.ngelmakproject.web.rest.errors.UserNotFoundException;
-import org.ngelmakproject.web.rest.util.RandomUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;

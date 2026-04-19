@@ -6,6 +6,9 @@ import java.util.UUID;
 
 import org.ngelmakproject.config.Constants;
 import org.ngelmakproject.domain.User;
+import org.ngelmakproject.service.AdminService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -25,6 +28,7 @@ import jakarta.mail.internet.MimeMessage;
  */
 @Service
 public class MailService {
+	private static final Logger log = LoggerFactory.getLogger(AdminService.class);
 
 	private final JavaMailSender mailSender;
 	private final TemplateEngine templateEngine;
@@ -125,6 +129,9 @@ public class MailService {
 		context.getValues().forEach(thymeleaf::setVariable);
 
 		String html = templateEngine.process("mail/layout", thymeleaf);
+		
+		thymeleaf.getVariableNames().forEach(
+				name -> log.trace("{} = {}", name, thymeleaf.getVariable(name)));
 
 		sendEmail(to, subject, html);
 	}

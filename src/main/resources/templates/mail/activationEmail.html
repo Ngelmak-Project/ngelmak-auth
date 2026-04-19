@@ -1,4 +1,12 @@
-<p>Bonjour<span th:if="${firstName}"> <strong th:text="${firstName}"></strong></span>,</p>
+<p>
+    Bonjour<span th:if="${firstName}">
+    <strong th:text="${firstName}"></strong></span
+  >,
+</p>
+
+<p style="margin-top: 20px">
+  Votre nom d'utilisateur : <strong th:text="${username}"></strong>
+</p>
 
 <p>
   Merci d'avoir rejoint <strong th:text="${associationName}"></strong>. Pour
@@ -7,6 +15,16 @@
 </p>
 
 <a th:href="${activationUrl}" class="button">Activer mon compte</a>
+
+<p style="margin-top: 20px">
+  Si le bouton ne fonctionne pas, vous pouvez copier-coller ce lien dans votre
+  navigateur :<br />
+  <a
+    th:href="${activationUrl}"
+    th:text="${activationUrl}"
+    style="word-break: break-all"
+  ></a>
+</p>
 
 <p style="margin-top: 30px">
   Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet
