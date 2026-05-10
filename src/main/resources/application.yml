@@ -74,11 +74,10 @@ jwt-secret-key: NzgwODE3NjExMzk1MDFjYzc2NmRjMmM2Yjc0ZTYyMGUxODM3ZThjMzk0ZTliMTE0
 jwt-expiration-in-seconds: 86400 # 24 hours
 jwt-expiration-in-seconds-for-remember-me: 4406400 # 15 days
 
-
 # Frontend configuration
 frontend:
   api:
-    url: ngelmak.org
+    url: https://ngelmak.org
 
 file:
   upload-directory:

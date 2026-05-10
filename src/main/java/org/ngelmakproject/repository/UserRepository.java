@@ -3,6 +3,7 @@ package org.ngelmakproject.repository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.domain.enumeration.CertificationStatus;
@@ -48,7 +49,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findAllWithAuthorities(Pageable pageable);
 
     // Method to find non-activated users created before a certain date
-    List<User> findAllByActivatedIsFalseAndActivationKeyIsNotNullAndCreatedDateBefore(Instant dateTime);
+    List<User> findAllByActivatedIsFalseAndCreatedDateBefore(Instant dateTime);
 
     // Method to find users by certification status and created date
     List<User> findByCertificationStatusAndCreatedDateBefore(CertificationStatus status, Instant dateTime);
@@ -75,7 +76,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // Method to find user IDs that are marked for deletion before a certain date.
     @Query("SELECT u.id FROM User u WHERE u.deletedDate < :dateTime")
-    List<Long> findIdsByDeletedDateBefore(@Param("dateTime") Instant dateTime);
+    Set<Long> findIdsByDeletedDateBefore(@Param("dateTime") Instant dateTime);
 
     @EntityGraph(attributePaths = "authorities")
     Optional<User> findOneWithAuthoritiesById(Long id);

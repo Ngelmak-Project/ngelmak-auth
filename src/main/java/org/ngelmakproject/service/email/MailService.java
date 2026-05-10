@@ -94,8 +94,8 @@ public class MailService {
 	 * @param params the query parameters for the URL
 	 * @return the constructed frontend URL
 	 */
-	private static String buildFrontendUrl(String base, String path, Map<String, Object> params) {
-		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(base).path(path);
+	private String buildFrontendUrl(String path, Map<String, Object> params) {
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(frontendApiUrl).path(path);
 		params.forEach(builder::queryParam);
 		return builder.toUriString();
 	}
@@ -143,7 +143,7 @@ public class MailService {
 	 * @param user the user to send the activation email to
 	 */
 	public void sendActivationEmail(User user) {
-		String activationUrl = buildFrontendUrl(frontendApiUrl, Constants.FRONTEND_AUTH_ACTIVATION,
+		String activationUrl = buildFrontendUrl(Constants.FRONTEND_AUTH_ACTIVATION,
 				Map.of("key", user.getActivationKey()));
 		EmailContext ctx = new EmailContext()
 				.set("firstName", user.getFirstName())
@@ -164,7 +164,7 @@ public class MailService {
 	 * @param newEmail the new email address to verify
 	 */
 	public void sendEmailVerificationEmail(User user) {
-		String verificationUrl = buildFrontendUrl(frontendApiUrl, Constants.FRONTEND_AUTH_ACTIVATION,
+		String verificationUrl = buildFrontendUrl(Constants.FRONTEND_AUTH_ACTIVATION,
 				Map.of("key", user.getActivationKey()));
 		EmailContext ctx = new EmailContext()
 				.set("firstName", user.getFirstName())
@@ -201,7 +201,7 @@ public class MailService {
 	 * @param user the user to send the password reset email to
 	 */
 	public void sendPasswordResetEmail(User user) {
-		String resetUrl = buildFrontendUrl(frontendApiUrl, Constants.FRONTEND_AUTH_RESET_PASSWORD,
+		String resetUrl = buildFrontendUrl(Constants.FRONTEND_AUTH_RESET_PASSWORD,
 				Map.of("key", user.getResetKey()));
 		EmailContext ctx = new EmailContext()
 				.set("firstName", user.getFirstName())
@@ -270,7 +270,7 @@ public class MailService {
 				.set("additionalNotes",
 						"Cette mesure vise à protéger la communauté et à préserver un espace d'échange sain.")
 				.set("appealUrl",
-						buildFrontendUrl(frontendApiUrl, Constants.FRONTEND_MODERATION_APPEAL, Map.of("id", appealId)));
+						buildFrontendUrl(Constants.FRONTEND_MODERATION_APPEAL, Map.of("id", appealId)));
 
 		sendEmailFromTemplate(
 				user.getEmail(),
