@@ -345,34 +345,6 @@ public class AdminService {
     }
 
     /**
-     * Scheduled task to remove non-certified users who have been inactive for more
-     * than 7 days.
-     * 
-     * <p>
-     * This method runs every day at 3 AM and performs the following steps:
-     * <ul>
-     * <li>Queries the user repository for users with a certification status of
-     * NOT_REQUESTED and a created date older than 7 days</li>
-     * <li>Logs the IDs of the users that are being deleted</li>
-     * <li>Deletes the identified users from the repository</li>
-     * </ul>
-     */
-    @Scheduled(cron = "0 0 3 * * *", zone = "UTC") // every day at 3 AM
-    private void removeNonCertifiedUser() {
-        List<Long> ids = userRepository
-                .findByCertificationStatusAndCreatedDateBefore(CertificationStatus.NOT_REQUESTED,
-                        Instant.now().minus(2, ChronoUnit.MONTHS))
-                .stream()
-                .map(user -> {
-                    log.debug("Deleting non-certified User {}", user);
-                    return user.getId();
-                }).toList();
-        if (!ids.isEmpty()) {
-            // userRepository.deleteAllById(ids);
-        }
-    }
-
-    /**
      * Scheduled task to remove non-activated users who have been inactive for more
      * than 30 days.
      * 
@@ -386,7 +358,7 @@ public class AdminService {
      * </ul>
      */
     @Scheduled(cron = "0 0 3 * * *", zone = "UTC") // every day at 3 AM
-    private void removeNotActivatedUsers() {
+    public void removeNotActivatedUsers() {
         Set<Long> ids = userRepository
                 .findAllByActivatedIsFalseAndCreatedDateBefore(
                         Instant.now().minus(30, ChronoUnit.DAYS))
