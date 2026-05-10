@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.AuthorityRequest;
@@ -379,7 +380,7 @@ public class UserService {
     @Scheduled(cron = "0 0 3 * * ?") // Every day at 3 AM
     public void removeDeletedUsers() {
         Instant cutoffDate = Instant.now().minus(30, ChronoUnit.DAYS);
-        List<Long> ids = userRepository.findIdsByDeletedDateBefore(cutoffDate);
+        Set<Long> ids = userRepository.findIdsByDeletedDateBefore(cutoffDate);
         if (!ids.isEmpty()) {
             log.debug("Deleting users with IDs: {}", ids);
             userRepository.deleteAllById(ids);

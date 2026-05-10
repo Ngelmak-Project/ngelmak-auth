@@ -217,7 +217,7 @@ public class AdminService {
     /**
      * Revokes authority from a user.
      *
-     * @param targetUser the user to update
+     * @param targetUser  the user to update
      * @param authorities the authorities to revoke
      * @param reason      the reason for revoking the authorities
      * @return the updated User object with the authorities revoked.
@@ -387,16 +387,16 @@ public class AdminService {
      */
     @Scheduled(cron = "0 0 3 * * *", zone = "UTC") // every day at 3 AM
     private void removeNotActivatedUsers() {
-        List<Long> ids = userRepository
-                .findAllByActivatedIsFalseAndActivationKeyIsNotNullAndCreatedDateBefore(
+        Set<Long> ids = userRepository
+                .findAllByActivatedIsFalseAndCreatedDateBefore(
                         Instant.now().minus(30, ChronoUnit.DAYS))
                 .stream()
                 .map(user -> {
                     log.debug("Deleting not activated User {}", user);
                     return user.getId();
-                }).toList();
+                }).collect(Collectors.toSet());
         if (!ids.isEmpty()) {
-            // userRepository.deleteAllById(ids);
+            userRepository.deleteAllById(ids);
         }
     }
 }
