@@ -36,7 +36,8 @@ spring:
   datasource:
     hikari:
       initialization-fail-timeout: 0
-    url: jdbc:postgresql://ngelmak-pgdb:5432/ngelmakauthdb
+    url: jdbc:postgresql://10.42.0.130:5432/ngelmakauthdb
+    # url: jdbc:postgresql://ngelmak-pgdb:5432/ngelmakauthdb
     username: app_migrator
     password: migratorpass
 

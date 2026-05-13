@@ -1,14 +1,17 @@
-<p>Bonjour<span th:if="${firstName}"> <strong th:text="${firstName}"></strong></span>,</p>
-
 <p>
-  Nous vous informons qu'une mesure de suspension temporaire a été appliquée à
-  votre compte sur <strong th:text="${associationName}"></strong>.
+  <span th:text="#{email.suspension.greeting}"></span>
+  <span th:if="${firstName}">
+    <strong th:text="${firstName}"></strong> </span
+  >,
 </p>
 
 <p>
-  Cette décision a été prise après examen de contenus ou comportements ne
-  respectant pas les principes essentiels du projet : responsabilité, respect
-  mutuel et qualité des échanges.
+  <span th:text="#{email.suspension.intro}"></span>
+  <strong th:text="${associationName}"></strong>.
+</p>
+
+<p>
+  <span th:text="#{email.suspension.reasonIntro}"></span>
 </p>
 
 <div
@@ -27,41 +30,37 @@
       font-weight: 600;
       color: #0d1b2a;
     "
-  >
-    Détails de la suspension
-  </h3>
+    th:text="#{email.suspension.detailsTitle}"
+  ></h3>
 
   <p style="margin: 0; line-height: 1.6">
-    <strong>Durée :</strong>
+    <strong th:text="#{email.suspension.duration}"></strong>
     <span th:text="${suspensionDuration}"></span>
-    <!-- Exemple : "48 heures", "7 jours" -->
   </p>
 
   <p style="margin: 8px 0 0 0; line-height: 1.6">
-    <strong>Motif :</strong>
+    <strong th:text="#{email.suspension.reason}"></strong>
     <span th:text="${suspensionReason}"></span>
-    <!-- Exemple : "Violations répétées des règles de civilité" -->
   </p>
 
   <p style="margin: 8px 0 0 0; line-height: 1.6">
-    <strong>Contenu concerné :</strong>
+    <strong th:text="#{email.suspension.contentType}"></strong>
     <span th:text="${contentType}"></span>
-    <!-- Exemple : "Poste", "Commentaire" -->
   </p>
 </div>
 
-<p th:text="${additionalNotes}">
-  <!-- Exemple : "Cette mesure vise à protéger la communauté et à préserver un espace d'échange sain." -->
-</p>
+<p th:text="${additionalNotes}"></p>
 
 <p>
-  Si vous estimez que cette décision est injustifiée ou si vous souhaitez
-  demander un réexamen, vous pouvez utiliser le bouton ci-dessous.
+  <span th:text="#{email.suspension.appeal}"></span>
 </p>
 
-<a th:href="${appealUrl}" class="button">Demander une révision</a>
+<a
+  th:href="${appealUrl}"
+  class="button"
+  th:text="#{email.suspension.button}"
+></a>
 
 <p style="margin-top: 30px">
-  Merci de votre compréhension. Nous comptons sur votre engagement pour
-  maintenir un espace respectueux et fidèle aux valeurs du projet.
+  <span th:text="#{email.suspension.thanks}"></span>
 </p>

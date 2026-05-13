@@ -1,6 +1,7 @@
 package org.ngelmakproject.service.email;
 
 import java.time.Year;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -10,6 +11,7 @@ import org.ngelmakproject.service.AdminService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -30,9 +32,6 @@ import jakarta.mail.internet.MimeMessage;
 public class MailService {
 	private static final Logger log = LoggerFactory.getLogger(AdminService.class);
 
-	private final JavaMailSender mailSender;
-	private final TemplateEngine templateEngine;
-
 	@Value("${spring.application.name}")
 	private String applicationName;
 	@Value("${frontend.api.url}")
@@ -47,13 +46,17 @@ public class MailService {
 	private String twitterUrl;
 	@Value("${spring.application.support.instagram-url}")
 	private String instagramUrl;
-
 	@Value("${spring.mail.username}")
 	private String sender;
 
-	public MailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
+	private final JavaMailSender mailSender;
+	private final TemplateEngine templateEngine;
+	private final MessageSource messageSource;
+
+	public MailService(JavaMailSender mailSender, TemplateEngine templateEngine, MessageSource messageSource) {
 		this.mailSender = mailSender;
 		this.templateEngine = templateEngine;
+		this.messageSource = messageSource;
 	}
 
 	private void sendEmailSync(String to, String subject, String htmlContent) {
@@ -105,19 +108,25 @@ public class MailService {
 	 *
 	 * @param to           the recipient's email address
 	 * @param subject      the email subject
+	 * @param keyLang      the language key for localization (e.g., "en", "fr")
 	 * @param bodyTemplate the name of the Thymeleaf template for the email body
 	 * @param context      the context for the Thymeleaf template
 	 */
 	public void sendEmailFromTemplate(
 			String to,
-			String subject,
+			String subjectKey,
+			String keyLang,
 			String bodyTemplate,
 			EmailContext context) {
-		Context thymeleaf = new Context();
+		log.info("📧 Preparing email to {} with subject key '{}'", to, subjectKey);
+
+		Locale locale = Locale.forLanguageTag(keyLang); // e.g. "fr"
+
+		Context thymeleaf = new Context(locale);
 
 		thymeleaf.setVariable("uniqueId", UUID.randomUUID().toString());
 		thymeleaf.setVariable("year", Year.now().getValue());
-		thymeleaf.setVariable("headerTitle", subject);
+		thymeleaf.setVariable("headerTitle", subjectKey);
 		thymeleaf.setVariable("associationName", applicationName);
 		thymeleaf.setVariable("supportEmail", supportEmail);
 		thymeleaf.setVariable("address", address);
@@ -128,10 +137,14 @@ public class MailService {
 
 		context.getValues().forEach(thymeleaf::setVariable);
 
+		// Render HTML with locale-aware message resolution
 		String html = templateEngine.process("mail/layout", thymeleaf);
-		log.info("Generated HTML for email to {}: {}", to, html);
+		log.debug("Generated HTML for email to {}: {}", to, html);
 		thymeleaf.getVariableNames().forEach(
-				name -> log.info("{} = {}", name, thymeleaf.getVariable(name)));
+				name -> log.debug("{} = {}", name, thymeleaf.getVariable(name)));
+
+		// Resolve subject using MessageSource + locale
+		String subject = messageSource.getMessage(subjectKey, null, locale);
 
 		sendEmail(to, subject, html);
 	}
@@ -151,7 +164,8 @@ public class MailService {
 
 		sendEmailFromTemplate(
 				user.getEmail(),
-				"Activate your account",
+				"email.activation.subject",
+				user.getLangKey(),
 				"activationEmail",
 				ctx);
 	}
@@ -172,7 +186,8 @@ public class MailService {
 
 		sendEmailFromTemplate(
 				user.getEmail(),
-				"Verify your new email address",
+				"email.verification.subject",
+				user.getLangKey(),
 				"emailVerification",
 				ctx);
 	}
@@ -189,7 +204,8 @@ public class MailService {
 
 		sendEmailFromTemplate(
 				user.getEmail(),
-				"Welcome to " + applicationName,
+				"email.welcome.subject",
+				user.getLangKey(),
 				"welcomeEmail",
 				ctx);
 	}
@@ -209,8 +225,27 @@ public class MailService {
 
 		sendEmailFromTemplate(
 				user.getEmail(),
-				"Reset your password",
+				"email.password.reset.subject",
+				user.getLangKey(),
 				"passwordResetEmail",
+				ctx);
+	}
+
+	public void sendModerationDecisionEmail(User user) {
+		EmailContext ctx = new EmailContext()
+				.set("firstName", user.getFirstName())
+				.set("contentType", "Poste")
+				.set("decisionReason", "Non-respect des règles de civilité")
+				.set("decisionAction", "Retrait du contenu")
+				.set("additionalNotes",
+						"Cette mesure vise uniquement à préserver la qualité de l'espace communautaire.")
+				.set("appealUrl", "https://nglmk.org/moderation/appeal/123");
+
+		sendEmailFromTemplate(
+				user.getEmail(),
+				"email.moderation.decision.subject",
+				user.getLangKey(),
+				"moderationDecision",
 				ctx);
 	}
 
@@ -225,7 +260,8 @@ public class MailService {
 
 		sendEmailFromTemplate(
 				user.getEmail(),
-				"Acknowledgment of your moderator request",
+				"email.moderation.request.subject",
+				user.getLangKey(),
 				"moderatorRequestAck",
 				ctx);
 	}
@@ -242,7 +278,8 @@ public class MailService {
 
 		sendEmailFromTemplate(
 				user.getEmail(),
-				"Invitation à rejoindre le panel de modération",
+				"email.moderation.acceptance.subject",
+				user.getLangKey(),
 				"moderationAcceptance",
 				ctx);
 	}
@@ -274,7 +311,8 @@ public class MailService {
 
 		sendEmailFromTemplate(
 				user.getEmail(),
-				"Notification de suspension",
+				"email.suspension.subject",
+				user.getLangKey(),
 				"suspensionNotice",
 				ctx);
 	}
@@ -292,25 +330,9 @@ public class MailService {
 
 		sendEmailFromTemplate(
 				user.getEmail(),
-				"Annonce communautaire",
+				"email.community.announcement.subject",
+				user.getLangKey(),
 				"communityAnnouncement",
-				ctx);
-	}
-
-	public void sendModerationDecisionEmail(User user) {
-		EmailContext ctx = new EmailContext()
-				.set("firstName", user.getFirstName())
-				.set("contentType", "Poste")
-				.set("decisionReason", "Non-respect des règles de civilité")
-				.set("decisionAction", "Retrait du contenu")
-				.set("additionalNotes",
-						"Cette mesure vise uniquement à préserver la qualité de l'espace communautaire.")
-				.set("appealUrl", "https://nglmk.org/moderation/appeal/123");
-
-		sendEmailFromTemplate(
-				user.getEmail(),
-				"Décision de modération",
-				"moderationDecision",
 				ctx);
 	}
 }

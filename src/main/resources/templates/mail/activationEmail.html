@@ -1,24 +1,29 @@
 <p>
-    Bonjour<span th:if="${firstName}">
-    <strong th:text="${firstName}"></strong></span
+  <span th:text="#{email.activation.greeting}"></span>
+  <span th:if="${firstName}">
+    <strong th:text="${firstName}"></strong> </span
   >,
 </p>
 
 <p style="margin-top: 20px">
-  Votre nom d'utilisateur : <strong th:text="${username}"></strong>
+  <span th:text="#{email.activation.username}"></span>
+  <strong th:text="${username}"></strong>
 </p>
 
 <p>
-  Merci d'avoir rejoint <strong th:text="${associationName}"></strong>. Pour
-  finaliser votre inscription, veuillez activer votre compte en cliquant sur le
-  bouton ci-dessous.
+  <span th:text="#{email.activation.intro}"></span>
+  <strong th:text="${associationName}"></strong>.
+  <span th:text="#{email.activation.action}"></span>
 </p>
 
-<a th:href="${activationUrl}" class="button">Activer mon compte</a>
+<a
+  th:href="${activationUrl}"
+  class="button"
+  th:text="#{email.activation.button}"
+></a>
 
 <p style="margin-top: 20px">
-  Si le bouton ne fonctionne pas, vous pouvez copier-coller ce lien dans votre
-  navigateur :<br />
+  <span th:text="#{email.activation.copyLink}"></span><br />
   <a
     th:href="${activationUrl}"
     th:text="${activationUrl}"
@@ -27,6 +32,5 @@
 </p>
 
 <p style="margin-top: 30px">
-  Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet
-  email.
+  <span th:text="#{email.activation.ignore}"></span>
 </p>

@@ -1,13 +1,17 @@
-<p>Bonjour<span th:if="${firstName}"> <strong th:text="${firstName}"></strong></span>,</p>
-
 <p>
-  Nous vous informons qu'une décision de modération a été prise concernant l'un
-  de vos contenus sur <strong th:text="${associationName}"></strong>.
+  <span th:text="#{email.moderation.greeting}"></span>
+  <span th:if="${firstName}">
+    <strong th:text="${firstName}"></strong> </span
+  >,
 </p>
 
 <p>
-  Cette décision a été appliquée dans le respect des principes fondamentaux du
-  projet : souveraineté, responsabilité collective et qualité des échanges.
+  <span th:text="#{email.moderation.intro}"></span>
+  <strong th:text="${associationName}"></strong>.
+</p>
+
+<p>
+  <span th:text="#{email.moderation.context}"></span>
 </p>
 
 <div
@@ -26,41 +30,37 @@
       font-weight: 600;
       color: #0d1b2a;
     "
-  >
-    Détails de la décision
-  </h3>
+    th:text="#{email.moderation.detailsTitle}"
+  ></h3>
 
   <p style="margin: 0; line-height: 1.6">
-    <strong>Type de contenu :</strong>
+    <strong th:text="#{email.moderation.contentType}"></strong>
     <span th:text="${contentType}"></span>
-    <!-- Exemple : "Poste", "Commentaire" -->
   </p>
 
   <p style="margin: 8px 0 0 0; line-height: 1.6">
-    <strong>Motif :</strong>
+    <strong th:text="#{email.moderation.reason}"></strong>
     <span th:text="${decisionReason}"></span>
-    <!-- Exemple : "Non-respect des règles de civilité" -->
   </p>
 
   <p style="margin: 8px 0 0 0; line-height: 1.6">
-    <strong>Action appliquée :</strong>
+    <strong th:text="#{email.moderation.action}"></strong>
     <span th:text="${decisionAction}"></span>
-    <!-- Exemple : "Retrait du contenu", "Avertissement", "Suspension temporaire" -->
   </p>
 </div>
 
-<p th:text="${additionalNotes}">
-  <!-- Exemple : "Cette mesure vise uniquement à préserver la qualité de l'espace communautaire." -->
-</p>
+<p th:text="${additionalNotes}"></p>
 
 <p>
-  Si vous estimez que cette décision est injustifiée ou qu'elle nécessite une
-  révision, vous pouvez demander un réexamen via le bouton ci-dessous.
+  <span th:text="#{email.moderation.appeal}"></span>
 </p>
 
-<a th:href="${appealUrl}" class="button">Demander une révision</a>
+<a
+  th:href="${appealUrl}"
+  class="button"
+  th:text="#{email.moderation.button}"
+></a>
 
 <p style="margin-top: 30px">
-  Merci de votre compréhension et de votre engagement à maintenir un espace
-  respectueux, constructif et fidèle aux valeurs du projet.
+  <span th:text="#{email.moderation.thanks}"></span>
 </p>

@@ -1,13 +1,20 @@
-<p>Bonjour<span th:if="${firstName}"> <strong th:text="${firstName}"></strong></span>,</p>
-
 <p>
-  Pour confirmer votre adresse email, veuillez cliquer sur le bouton ci-dessous.
-  Cette étape nous permet de garantir la sécurité et l'intégrité de votre
-  compte.
+  <span th:text="#{email.verification.greeting}"></span>
+  <span th:if="${firstName}">
+    <strong th:text="${firstName}"></strong> </span
+  >,
 </p>
 
-<a th:href="${verificationUrl}" class="button">Vérifier mon email</a>
+<p>
+  <span th:text="#{email.verification.intro}"></span>
+</p>
+
+<a
+  th:href="${verificationUrl}"
+  class="button"
+  th:text="#{email.verification.button}"
+></a>
 
 <p style="margin-top: 30px">
-  Si vous n'avez pas demandé cette vérification, vous pouvez ignorer ce message.
+  <span th:text="#{email.verification.ignore}"></span>
 </p>
