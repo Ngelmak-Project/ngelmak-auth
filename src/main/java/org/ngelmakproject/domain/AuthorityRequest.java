@@ -20,12 +20,12 @@ import jakarta.validation.constraints.NotNull;
  * A AuthorityRequest. Represents a user asking for a privilege.
  */
 @Entity
-@Table(name = "nk_authority_request")
+@Table(name = "authority_request")
 public class AuthorityRequest implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "authority_request_seq")
+    @SequenceGenerator(name = "authority_request_seq", sequenceName = "authority_request_seq", allocationSize = 50)
     private Long id;
 
     @ManyToOne(optional = false)

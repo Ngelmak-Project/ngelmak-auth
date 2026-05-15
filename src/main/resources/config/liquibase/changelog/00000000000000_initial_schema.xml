@@ -12,21 +12,21 @@
         <loadData
             file="config/liquibase/data/user.csv"
             separator=";"
-            tableName="nk_user">
+            tableName="user">
             <column name="created_date" type="timestamp" />
         </loadData>
 
         <loadData
             file="config/liquibase/data/authority.csv"
             separator=";"
-            tableName="nk_authority">
+            tableName="authority">
             <column name="name" type="string" />
         </loadData>
 
         <loadData
             file="config/liquibase/data/user_authority.csv"
             separator=";"
-            tableName="nk_user_authority">
+            tableName="user_authority">
             <column name="user_id" type="numeric" />
         </loadData>
     </changeSet>
@@ -35,7 +35,7 @@
         <loadData
             file="config/liquibase/fake-data/user.csv"
             separator=";"
-            tableName="nk_user">
+            tableName="user">
             <column name="created_date" type="timestamp" />
         </loadData>
     </changeSet>
@@ -44,7 +44,7 @@
         <loadData
             file="config/liquibase/fake-data/user_authority.csv"
             separator=";"
-            tableName="nk_user_authority"> </loadData>
+            tableName="user_authority"> </loadData>
     </changeSet>
 
 </databaseChangeLog>

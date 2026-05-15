@@ -36,14 +36,14 @@ import jakarta.validation.constraints.Size;
  * A user.
  */
 @Entity
-@Table(name = "nk_user")
+@Table(name = "user")
 public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
+    @SequenceGenerator(name = "user_seq", sequenceName = "user_seq", allocationSize = 50)
     private Long id;
 
     @NotNull
@@ -188,7 +188,7 @@ public class User implements Serializable {
      */
     @JsonIgnore
     @ManyToMany(cascade = CascadeType.REMOVE)
-    @JoinTable(name = "nk_user_authority", joinColumns = {
+    @JoinTable(name = "user_authority", joinColumns = {
             @JoinColumn(name = "user_id", referencedColumnName = "id") }, inverseJoinColumns = {
                     @JoinColumn(name = "authority_name", referencedColumnName = "name") })
     @BatchSize(size = 20)

@@ -19,14 +19,14 @@ import jakarta.persistence.Table;
  * It can be used for support requests, feedback, or general inquiries.
  */
 @Entity
-@Table(name = "nk_contact_message")
+@Table(name = "contact_message")
 public class ContactMessage implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "contact_message_seq")
+    @SequenceGenerator(name = "contact_message_seq", sequenceName = "contact_message_seq", allocationSize = 50)
     @Column(name = "id")
     private Long id;
 

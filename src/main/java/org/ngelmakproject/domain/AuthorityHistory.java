@@ -20,12 +20,15 @@ import jakarta.persistence.Table;
  * For example, when a user requests a new authority, or when an admin approves or rejects such a request.
  */
 @Entity
-@Table(name = "nk_authority_history")
+@Table(name = "authority_history")
 public class AuthorityHistory implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "sequenceGenerator")
-    @SequenceGenerator(name = "sequenceGenerator")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "authority_history_seq")
+    @SequenceGenerator(name = "authority_history_seq", sequenceName = "authority_history_seq", allocationSize = 50)
+    @Column(name = "id")
     private Long id;
 
     @ManyToOne(optional = false)

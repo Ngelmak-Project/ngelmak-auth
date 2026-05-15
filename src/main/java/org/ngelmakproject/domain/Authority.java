@@ -21,7 +21,7 @@ import jakarta.validation.constraints.Size;
  * A Authority.
  */
 @Entity
-@Table(name = "nk_authority")
+@Table(name = "authority")
 @JsonIgnoreProperties(value = { "new", "id" })
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Authority implements Serializable, Persistable<String> {
