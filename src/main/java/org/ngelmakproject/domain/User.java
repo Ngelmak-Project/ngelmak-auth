@@ -36,21 +36,21 @@ import jakarta.validation.constraints.Size;
  * A user.
  */
 @Entity
-@Table(name = "user")
+@Table(name = "user_ngelmak")
 public class User implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
-    @SequenceGenerator(name = "user_seq", sequenceName = "user_seq", allocationSize = 50)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_ngelmak_seq")
+    @SequenceGenerator(name = "user_ngelmak_seq", sequenceName = "user_ngelmak_seq", allocationSize = 50)
     private Long id;
 
+    // The username/login of the user, which must be unique.
     @NotNull
     @Pattern(regexp = Constants.LOGIN_REGEX)
     @Size(min = 1, max = 50)
     @Column(length = 50, unique = true, nullable = false)
-    // The username/login of the user, which must be unique.
     private String login;
 
     @JsonIgnore

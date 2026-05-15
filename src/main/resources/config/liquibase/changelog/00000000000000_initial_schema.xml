@@ -12,7 +12,7 @@
         <loadData
             file="config/liquibase/data/user.csv"
             separator=";"
-            tableName="user">
+            tableName="user_ngelmak">
             <column name="created_date" type="timestamp" />
         </loadData>
 
@@ -35,7 +35,7 @@
         <loadData
             file="config/liquibase/fake-data/user.csv"
             separator=";"
-            tableName="user">
+            tableName="user_ngelmak">
             <column name="created_date" type="timestamp" />
         </loadData>
     </changeSet>
