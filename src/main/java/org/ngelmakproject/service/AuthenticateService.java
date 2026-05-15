@@ -128,7 +128,7 @@ public class AuthenticateService {
      */
     public Optional<String> authenticate(LoginRequestDTO loginRequestDTO) {
         log.debug("Request to authenticate a User: {}", loginRequestDTO);
-        return userRepository.findOneByLoginIgnoreCase(loginRequestDTO.login())
+        return userRepository.findOneByEmailIgnoreCaseOrLoginIgnoreCase(loginRequestDTO.login(), loginRequestDTO.login())
                 .map(user -> {
                     // Account must be activated
                     if (!user.isActivated()) {

@@ -108,7 +108,7 @@ public class UserService {
         log.debug("Get current User details");
         return getUserWithAuthorities()
                 .map(UserPrincipal::id)
-                .flatMap(userRepository::findById)
+                .flatMap(userRepository::findOneWithAuthoritiesById)
                 .orElseThrow(UserNotFoundException::new);
     }
 
@@ -168,7 +168,7 @@ public class UserService {
         // If the login is already the same, skip everything
         if (normalizedLogin.equals(principal.login())) {
             // No DB call needed — return the current user entity
-            return userRepository.findById(principal.id())
+            return userRepository.findOneWithAuthoritiesById(principal.id())
                     .orElseThrow(UserNotFoundException::new);
         }
 
@@ -180,7 +180,7 @@ public class UserService {
                 });
 
         // Load the user and update login
-        return userRepository.findById(principal.id())
+        return userRepository.findOneWithAuthoritiesById(principal.id())
                 .map(user -> {
                     user.setLogin(normalizedLogin);
                     log.debug("Updated login for User: {}", principal.id());
@@ -210,7 +210,7 @@ public class UserService {
 
         // If the email is already the same, skip all checks and DB lookups
         if (normalizedEmail.equals(principal.email())) {
-            return userRepository.findById(principal.id())
+            return userRepository.findOneWithAuthoritiesById(principal.id())
                     .orElseThrow(UserNotFoundException::new);
         }
 
@@ -222,7 +222,7 @@ public class UserService {
                 });
 
         // Load the user and update email
-        return userRepository.findById(principal.id())
+        return userRepository.findOneWithAuthoritiesById(principal.id())
                 .map(user -> {
                     user.setEmail(normalizedEmail);
                     user.setActivated(false); // require reactivation
@@ -247,7 +247,7 @@ public class UserService {
     public User updateUser(UserUpdateDTO userUpdateDTO) {
         return this.getUserWithAuthorities()
                 .map(UserPrincipal::id)
-                .flatMap(userRepository::findById)
+                .flatMap(userRepository::findOneWithAuthoritiesById)
                 .map(existingUser -> {
                     // Update user fields only if the value is present
                     if (userUpdateDTO.firstName() != null) {
@@ -272,7 +272,7 @@ public class UserService {
     public User requestAuthority(String authorityName) {
         return this.getUserWithAuthorities()
                 .map(UserPrincipal::id)
-                .flatMap(userRepository::findById)
+                .flatMap(userRepository::findOneWithAuthoritiesById)
                 .map(existingUser -> {
                     var authority = new Authority();
                     authority.setName(authorityName);
