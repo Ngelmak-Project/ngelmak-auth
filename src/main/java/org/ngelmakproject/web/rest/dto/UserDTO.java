@@ -18,10 +18,10 @@ public record UserDTO(
         String email,
         boolean isActivated,
         String langKey,
+        boolean darkModeEnabled,
         Instant createdDate,
         CertificationStatus certificationStatus,
-        Set<String> authorities
-) {
+        Set<String> authorities) {
     public static UserDTO from(User user) {
         return new UserDTO(
                 user.getLogin(),
@@ -30,8 +30,11 @@ public record UserDTO(
                 user.getEmail(),
                 user.isActivated(),
                 user.getLangKey(),
+                user.isDarkModeEnabled(),
                 user.getCreatedDate(),
                 user.getCertificationStatus(),
-                user.getAuthorities().stream().map(Authority::getName).collect(Collectors.toSet()));
+                user.getAuthorities().stream()
+                        .map(Authority::getName)
+                        .collect(Collectors.toSet()));
     }
 }
