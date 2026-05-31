@@ -206,7 +206,7 @@ public class MailService {
 				ctx);
 	}
 
-	@PostConstruct
+	// @PostConstruct
 	public void sendTestEmail() {
 		log.info("📧 Sending test email to verify configuration...");
 		User testUser = new User();
