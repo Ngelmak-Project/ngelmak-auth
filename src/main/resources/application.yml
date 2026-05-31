@@ -36,7 +36,7 @@ spring:
   datasource:
     hikari:
       initialization-fail-timeout: 0
-    url: jdbc:postgresql://10.42.0.130:5432/ngelmakauthdb
+    url: jdbc:postgresql://192.168.1.158:5432/ngelmakauthdb
     # url: jdbc:postgresql://ngelmak-pgdb:5432/ngelmakauthdb
     username: app_migrator
     password: migratorpass
@@ -90,9 +90,17 @@ file:
     access:
       location: /resources/files
 
-spring.mail.host: smtp.gmail.com
+# Spring Mail Configuration
+spring.mail.host: mail.ngelmak.org
 spring.mail.port: 587
-spring.mail.username: youssouphfaye@esp.sn
-spring.mail.password: liqu xkee cbip youk 
+spring.mail.username: no-reply@ngelmak.org
+spring.mail.password: MySecure$Pass123
 spring.mail.properties.mail.smtp.auth: true
 spring.mail.properties.mail.smtp.starttls.enable: true
+spring.mail.properties.mail.smtp.starttls.required: true
+spring.mail.properties.mail.smtp.connectiontimeout: 5000
+spring.mail.properties.mail.smtp.timeout: 5000
+spring.mail.properties.mail.smtp.writetimeout: 5000
+spring.mail.properties.mail.smtp.ssl.protocols: TLSv1.2
+spring.mail.properties.mail.smtp.ssl.checkserveridentity: false
+spring.mail.properties.mail.smtp.ssl.trust: mail.ngelmak.org

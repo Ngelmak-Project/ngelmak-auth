@@ -189,7 +189,7 @@
                     style="padding: 20px 30px; width: 50%"
                   >
                     <img
-                      src="cid:logo"
+                      src="${frontendUrl}/assets/images/ngelmak-logo-light.svg"
                       alt="Logo"
                       style="
                         width: 110px;
@@ -321,13 +321,13 @@
           >
             <span th:text="#{email.layout.regards}">Cordialement,</span><br />
             <span th:text="#{email.layout.team}">L'équipe de</span>
-            <strong th:text="${associationName}"></strong>
+            <strong th:text="${applicationName}"></strong>
           </div>
         </div>
 
         <!-- FOOTER -->
         <div class="footer">
-          <p th:text="${associationName}"></p>
+          <p th:text="${applicationName}"></p>
 
           <p>
             <span th:text="${address}"></span><br />
@@ -339,19 +339,25 @@
 
           <div class="social-icons">
             <a th:href="${facebookUrl}" target="_blank"
-              ><img src="cid:facebook"
+              ><img
+                src="${frontendUrl}/assets/images/facebook.png"
+                alt="Facebook"
             /></a>
             <a th:href="${twitterUrl}" target="_blank"
-              ><img src="cid:twitter"
+              ><img
+                src="${frontendUrl}/assets/images/twitter.png"
+                alt="Twitter"
             /></a>
             <a th:href="${instagramUrl}" target="_blank"
-              ><img src="cid:instagram"
+              ><img
+                src="${frontendUrl}/assets/images/instagram.png"
+                alt="Instagram"
             /></a>
           </div>
 
           <p style="margin-top: 15px">
             © <span th:text="${year}"></span>
-            <span th:text="${associationName}"></span>.
+            <span th:text="${applicationName}"></span>.
             <span th:text="#{email.layout.rights}">All rights reserved.</span>
           </p>
 

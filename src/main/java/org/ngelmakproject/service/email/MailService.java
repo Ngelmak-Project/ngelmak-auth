@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -69,11 +68,6 @@ public class MailService {
 			helper.setSubject(subject);
 			helper.setText(htmlContent, true);
 
-			helper.addInline("logo", new ClassPathResource("static/images/logo.png"));
-			helper.addInline("facebook", new ClassPathResource("static/images/facebook.png"));
-			helper.addInline("twitter", new ClassPathResource("static/images/twitter.png"));
-			helper.addInline("instagram", new ClassPathResource("static/images/instagram.png"));
-
 			mailSender.send(message);
 
 		} catch (Exception e) {
@@ -127,12 +121,13 @@ public class MailService {
 		thymeleaf.setVariable("uniqueId", UUID.randomUUID().toString());
 		thymeleaf.setVariable("year", Year.now().getValue());
 		thymeleaf.setVariable("headerTitle", subjectKey);
-		thymeleaf.setVariable("associationName", applicationName);
 		thymeleaf.setVariable("supportEmail", supportEmail);
 		thymeleaf.setVariable("address", address);
 		thymeleaf.setVariable("facebookUrl", facebookUrl);
 		thymeleaf.setVariable("twitterUrl", twitterUrl);
 		thymeleaf.setVariable("instagramUrl", instagramUrl);
+		thymeleaf.setVariable("applicationName", applicationName);
+		thymeleaf.setVariable("frontendUrl", frontendApiUrl);
 		thymeleaf.setVariable("bodyTemplate", "mail/" + bodyTemplate);
 
 		context.getValues().forEach(thymeleaf::setVariable);
@@ -208,6 +203,19 @@ public class MailService {
 				user.getLangKey(),
 				"welcomeEmail",
 				ctx);
+	}
+
+	// @PostConstruct
+	public void sendTestEmail() {
+		log.info("📧 Sending test email to verify configuration...");
+		User testUser = new User();
+		testUser.setFirstName("Youssouph");
+		testUser.setLastName("Faye");
+		testUser.setLangKey("en");
+		testUser.setEmail("youssouph.faye@gmail.com");
+		testUser.setResetKey(UUID.randomUUID().toString());
+		// sendWelcomeEmail(testUser);
+		// sendPasswordResetEmail(testUser);
 	}
 
 	/**
