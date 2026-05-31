@@ -20,6 +20,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.internet.MimeMessage;
 
 /**
@@ -134,7 +135,7 @@ public class MailService {
 
 		// Render HTML with locale-aware message resolution
 		String html = templateEngine.process("mail/layout", thymeleaf);
-		log.debug("Generated HTML for email to {}: {}", to, html);
+		log.info("Generated HTML for email to {}: {}", to, html);
 		thymeleaf.getVariableNames().forEach(
 				name -> log.debug("{} = {}", name, thymeleaf.getVariable(name)));
 
@@ -205,7 +206,7 @@ public class MailService {
 				ctx);
 	}
 
-	// @PostConstruct
+	@PostConstruct
 	public void sendTestEmail() {
 		log.info("📧 Sending test email to verify configuration...");
 		User testUser = new User();
@@ -214,7 +215,7 @@ public class MailService {
 		testUser.setLangKey("en");
 		testUser.setEmail("youssouph.faye@gmail.com");
 		testUser.setResetKey(UUID.randomUUID().toString());
-		// sendWelcomeEmail(testUser);
+		sendWelcomeEmail(testUser);
 		// sendPasswordResetEmail(testUser);
 	}
 
