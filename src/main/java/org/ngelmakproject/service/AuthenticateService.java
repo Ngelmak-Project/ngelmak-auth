@@ -92,6 +92,9 @@ public class AuthenticateService {
         newUser.setEmail(userDTO.email().toLowerCase());
         // Set encrypted password
         newUser.setPassword(encryptedPassword);
+        newUser.setDarkModeEnabled(true);
+        // Set user language preference
+        newUser.setLangKey(userDTO.langKey());
         // Initially set user as inactive
         newUser.setActivated(false);
         // Generate a unique activation key

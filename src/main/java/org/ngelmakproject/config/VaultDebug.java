@@ -12,76 +12,82 @@ import org.springframework.stereotype.Component;
 @Component
 public class VaultDebug {
 
-  private static final Logger log = LoggerFactory.getLogger(VaultDebug.class);
+	private static final Logger log = LoggerFactory.getLogger(VaultDebug.class);
+	@Autowired
+	private Environment env;
 
-  @Autowired
-  private Environment env;
+	@Value("${jwt-secret-key:NOT_LOADED}")
+	private String jwtSecretKey;
 
-  @Value("${jwt-secret-key:NOT_LOADED}")
-  private String jwtSecretKey;
+	@Value("${spring.mail.password:NOT_LOADED}")
+	private String mailPassword;
 
-  @Value("${spring.datasource.username:NOT_LOADED}")
-  private String dbUser;
+	@Value("${spring.datasource.username:NOT_LOADED}")
+	private String dbUser;
 
-  @Value("${spring.datasource.password:NOT_LOADED}")
-  private String dbPass;
+	@Value("${spring.datasource.password:NOT_LOADED}")
+	private String dbPass;
 
-  @EventListener(ApplicationReadyEvent.class)
-  public void ready() {
+	@EventListener(ApplicationReadyEvent.class)
+	public void ready() {
 
-    String profile = String.join(",", env.getActiveProfiles());
+		String profile = String.join(",", env.getActiveProfiles());
 
-    String kvEnabled = env.getProperty("spring.cloud.vault.kv.enabled", "false");
-    String dbEnabled = env.getProperty("spring.cloud.vault.database.enabled", "false");
-    String transitEnabled = env.getProperty("spring.cloud.vault.transit.enabled", "false");
+		String kvEnabled = env.getProperty("spring.cloud.vault.kv.enabled", "false");
+		String dbEnabled = env.getProperty("spring.cloud.vault.database.enabled", "false");
+		String transitEnabled = env.getProperty("spring.cloud.vault.transit.enabled", "false");
 
-    String kvBackend = env.getProperty("spring.cloud.vault.kv.backend", "kv");
-    String kvContext = env.getProperty("spring.cloud.vault.kv.default-context", "");
-    String kvSeparator = env.getProperty("spring.cloud.vault.kv.profile-separator", "/");
-    String kvAppName = env.getProperty("spring.cloud.vault.kv.application-name", "");
+		String kvBackend = env.getProperty("spring.cloud.vault.kv.backend", "kv");
+		String kvContext = env.getProperty("spring.cloud.vault.kv.default-context", "");
+		String kvSeparator = env.getProperty("spring.cloud.vault.kv.profile-separator", "/");
+		String kvAppName = env.getProperty("spring.cloud.vault.kv.application-name", "");
 
-    String kvPath = kvBackend + "/" + kvContext;
-    if (!profile.isEmpty())
-      kvPath += kvSeparator + profile;
+		String kvPath = kvBackend + "/" + kvContext;
+		if (!profile.isEmpty())
+			kvPath += kvSeparator + profile;
 
-    log.info("\n\n" +
-        "====================  🔐 VAULT DEBUG INFO  ====================\n" +
-        " Active Profile        :  {}\n" +
-        "---------------------------------------------------------------\n" +
-        " KV Enabled            :  {}\n" +
-        " KV Backend            :  {}\n" +
-        " KV Default Context    :  {}\n" +
-        " KV Profile Separator  :  '{}'\n" +
-        " KV Application Name   :  '{}'\n" +
-        " KV Resolved Path      :  {}\n" +
-        "---------------------------------------------------------------\n" +
-        " DB Backend Enabled    :  {}\n" +
-        " DB Username Loaded    :  {}\n" +
-        " DB Password Loaded    :  {}\n" +
-        "---------------------------------------------------------------\n" +
-        " Transit Enabled       :  {}\n" +
-        "---------------------------------------------------------------\n" +
-        " JWT Secret Loaded     :  {}\n" +
-        "===============================================================\n",
-        profile,
-        kvEnabled,
-        kvBackend,
-        kvContext,
-        kvSeparator,
-        kvAppName,
-        kvPath,
-        dbEnabled,
-        mask(dbUser),
-        mask(dbPass),
-        transitEnabled,
-        mask(jwtSecretKey));
-  }
+		log.info("\n\n" +
+				"====================  🔐 VAULT DEBUG INFO  ====================\n" +
+				" Active Profile        :  {}\n" +
+				"---------------------------------------------------------------\n" +
+				" KV Enabled            :  {}\n" +
+				" KV Backend            :  {}\n" +
+				" KV Default Context    :  {}\n" +
+				" KV Profile Separator  :  '{}'\n" +
+				" KV Application Name   :  '{}'\n" +
+				" KV Resolved Path      :  {}\n" +
+				"---------------------------------------------------------------\n" +
+				" DB Backend Enabled    :  {}\n" +
+				" DB Username Loaded    :  {}\n" +
+				" DB Password Loaded    :  {}\n" +
+				"---------------------------------------------------------------\n" +
+				" Mail Password Loaded  :  {}\n" +
+				" JWT Secret Loaded     :  {}\n" +
+				"---------------------------------------------------------------\n" +
+				" Transit Enabled       :  {}\n" +
+				"===============================================================\n",
+				profile,
+				kvEnabled,
+				kvBackend,
+				kvContext,
+				kvSeparator,
+				kvAppName,
+				kvPath,
+				dbEnabled,
+				mask(dbUser),
+				mask(dbPass),
+				mask(mailPassword),
+				mask(jwtSecretKey),
+				transitEnabled);
+	}
 
-  private String mask(String value) {
-    if (value == null || value.equals("NOT_LOADED"))
-      return value;
-    if (value.length() <= 6)
-      return "***";
-    return value.substring(0, 3) + "..." + value.substring(value.length() - 3);
-  }
+	private String mask(String value) {
+		if (value == null || value.isEmpty() || "NOT_LOADED".equals(value)) {
+			return "❌ NOT_LOADED";
+		}
+		if (value.length() <= 6) {
+			return "***";
+		}
+		return value.substring(0, 3) + "..." + value.substring(value.length() - 3);
+	}
 }

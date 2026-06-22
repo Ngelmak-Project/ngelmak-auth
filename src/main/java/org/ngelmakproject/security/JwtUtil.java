@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
+import org.bouncycastle.jcajce.BCFKSLoadStoreParameter.SignatureAlgorithm;
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.User;
 import org.slf4j.Logger;
@@ -31,10 +32,23 @@ public class JwtUtil {
   private final long expirationSeconds;
   private final long rememberMeExpirationSeconds;
 
-  public JwtUtil(@Value("${jwt-secret-key}") String secret,
+  public JwtUtil(
+      @Value("${jwt-secret-key}") String secret,
       @Value("${jwt-expiration-in-seconds}") long expirationSeconds,
       @Value("${jwt-expiration-in-seconds-for-remember-me}") long rememberMeExpirationSeconds) {
-    this.secretKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret));
+
+    SecretKey key = null;
+
+    try {
+      byte[] decoded = Base64.getDecoder().decode(secret);
+      key = Keys.hmacShaKeyFor(decoded);
+    } catch (Exception ex) {
+      // Beautiful log instead of exception
+      log.error("❌ Invalid JWT secret key: the provided value is not valid Base64. " +
+          "Please update 'jwt-secret-key' with a proper Base64-encoded value.");
+    }
+
+    this.secretKey = key;
     this.expirationSeconds = expirationSeconds;
     this.rememberMeExpirationSeconds = rememberMeExpirationSeconds;
   }

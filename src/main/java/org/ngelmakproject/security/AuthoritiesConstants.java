@@ -13,7 +13,6 @@ public final class AuthoritiesConstants {
 
     public static final String MODERATOR = "ROLE_MODERATOR";
 
-    public static final String ANONYMOUS = "ROLE_ANONYMOUS";
 
     private AuthoritiesConstants() {
     }
@@ -23,6 +22,6 @@ public final class AuthoritiesConstants {
      * validate authority names when users request new authorities.
      */
     public static Set<String> getAuthorities() {
-        return Set.of(ADMIN, USER, MODERATOR, ANONYMOUS);
+        return Set.of(ADMIN, USER, MODERATOR);
     }
 }

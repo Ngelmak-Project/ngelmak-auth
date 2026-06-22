@@ -1,13 +1,9 @@
 spring:
   datasource:
-    url: jdbc:postgresql://ngelmak-pgdb:5432/ngelmakauthdb
-    username: ${BOOTSTRAP_DB_USERNAME}
-    password: ${BOOTSTRAP_DB_PASSWORD}
+    url: jdbc:postgresql://postgres:5432/ngelmakauthdb
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update   # or create / create-drop
     show-sql: true
-
-  liquibase:
-    enabled: ${LIQUIBASE_RUN:false}
-    change-log: classpath:config/liquibase/master.xml

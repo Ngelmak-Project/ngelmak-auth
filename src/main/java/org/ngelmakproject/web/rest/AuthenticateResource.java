@@ -35,7 +35,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * - │ ├── /auth # Authentication & account lifecycle
  * - │ │ ├── POST /authenticate
  * - │ │ ├── POST /register
- * - │ │ ├── POST /register
  * - │ │ ├── GET /activate?key=...
  * - │ │ ├── POST /activate/resend
  * - │ │ ├── POST /password-reset/init

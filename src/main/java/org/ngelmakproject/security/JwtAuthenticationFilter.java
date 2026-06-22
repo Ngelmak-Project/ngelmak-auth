@@ -53,7 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       HttpServletResponse response,
       FilterChain filterChain) throws ServletException, IOException {
 
-    log.info("🔐 JWT filter triggered");
+    log.debug("🔐 JWT filter triggered");
 
     // Extract the Authorization header
     String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
@@ -76,7 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       String email = optional.get().get("email", String.class);
       String authoritiesStr = optional.get().get("authorities", String.class);
 
-      log.info("\n" +
+      log.debug("\n" +
           "========< Gateway Auth Filter >=========\n" +
           "User-Id          : {}\n" +
           "User-Login       : {}\n" +

@@ -3,10 +3,8 @@ package org.ngelmakproject.domain;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.BatchSize;
 import org.ngelmakproject.config.Constants;
 import org.ngelmakproject.domain.enumeration.CertificationStatus;
@@ -143,7 +141,7 @@ public class User implements Serializable {
 
     /* Current certification status of the user. */
     @Enumerated(EnumType.STRING)
-    @Column(name = "certification_status", length = 20)
+    @Column(name = "certification_status", length = 20, nullable = true)
     private CertificationStatus certificationStatus = CertificationStatus.NOT_REQUESTED;
 
     /*
@@ -152,7 +150,7 @@ public class User implements Serializable {
      */
     @JsonIgnore
     @Enumerated(EnumType.STRING)
-    @Column(name = "doc_type", length = 20)
+    @Column(name = "doc_type", length = 20, nullable = true)
     private DocType docType;
 
     /*
@@ -208,7 +206,7 @@ public class User implements Serializable {
 
     // Lowercase the login before saving it in database
     public void setLogin(String login) {
-        this.login = StringUtils.lowerCase(login, Locale.ENGLISH);
+        this.login = login.toString();
     }
 
     public String getPassword() {
@@ -364,7 +362,7 @@ public class User implements Serializable {
     }
 
     public boolean isDarkModeEnabled() {
-        return darkModeEnabled;
+        return darkModeEnabled != null ? darkModeEnabled : false;
     }
 
     public void setDarkModeEnabled(boolean darkModeEnabled) {

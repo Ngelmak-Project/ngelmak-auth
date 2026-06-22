@@ -1,11 +1,18 @@
 spring:
   application:
-    name: "Ngelmak Project"
+    name: "Ngelmak Project - Auth"
+    support:
+      email: support@ngelmak.org
+      phone: +33 X XX XX XX XX
+      address: 
+      facebook-url: "#"
+      twitter-url: "#"
+      instagram-url: "#"
   config:
     import: vault:// # Enable Vault as a Config Data source
   cloud:
     vault:
-      uri: http://localhost:8200
+      uri: http://vault:8200
       authentication: approle
       fail-fast: true # Enable fail-fast to force confirmation. Spring Boot to crash immediately when Vault/OpenBao is not reachable
       app-role:
@@ -14,92 +21,50 @@ spring:
       database:
         enabled: true
         backend: database
-        role: ngelmak-rw-role
+        role: ngelmak-springboot-role # The Vault role that has permissions to access the database credentials
       kv:
-        enabled: false
-
+        enabled: true
+        backend: secret
+        application-name: jjwt,email/noreply
+        default-context: ""  # or omit this entirely
   datasource:
     hikari:
       initialization-fail-timeout: 0
-    url: jdbc:postgresql://ngelmak-pgdb:5432/ngelmakauthdb
-    # username: v-root-ngelmak--NQiueQV69JiGulzxWmpD-1767183902
-    # password: YPvXyQ8fEf3Wr-nr9cC9
-
+    url: jdbc:postgresql://postgres:5432/ngelmakauthdb
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: none # Use application-bootstrap.yml for updating the database schema
-
-  liquibase:
-    enabled: false
-
   jackson:
     serialization:
       fail-on-empty-beans: false
-
-  mail:
-    host: smtp.xxx.com
-    username: xxx@xxx.com
-    password: xxxxx
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-            required: true
-
   servlet:
     multipart:
       enabled: true
       max-file-size: 30MB
       max-request-size: 30MB
       resolve-lazily: false
-
   resources:
     cache-period: 86400
-
-server:
-  host: localhost
-  port: 4042
-  protocol: http
-
+  
+debug: false
 logging:
   level:
-    org.springframework.vault: DEBUG
-    # org.springframework.jdbc.datasource: DEBUG
-    # org:
-    #   hibernate:
-    #     SQL: WARN
-    #   springframework:
-    #     jdbc:
-    #       core:
-    #         JdbcTemplate: DEBUG
-    #         StatementCreatorUtils: TRACE
-    org.springframework.boot.autoconfigure: INFO
+    root: INFO
 
-debug: true
+server:
+  port: 37273
 
-ngelmak:
-  security:
-    authentication:
-      jwt:
-        base64-secret: NzgwODE3NjExMzk1MDFjYzc2NmRjMmM2Yjc0ZTYyMGUxODM3ZThjMzk0ZTliMTE0MjhlNjliOWRhYTI2MzFkN2RkMGU3NDVhYTA0MzRkNTBkNGEzYmZlMzE1MTg4ZjVmYzA5NmFlNTEyZjkyZjYxMGJlMTM1NmU3ZmU0NDg2Yjk=
-        token-validity-in-seconds: 86400
-        token-validity-in-seconds-for-remember-me: 2592000
-
-  clientApp:
-    name: "Ngelmak Project"
-
-  mail:
-    base-url: http://127.0.0.1:8080
-
-  file:
-    upload-directory:
-      location: ./ngelmak-directory/files
-    public:
-      access:
-        location: /resources/public/files
-    private:
-      access:
-        location: /resources/files
+# Spring Mail Configuration
+spring.mail.host: mail.ngelmak.org
+spring.mail.port: 587
+spring.mail.username: no-reply@ngelmak.org
+spring.mail.password: ${noreply-password}
+spring.mail.properties.mail.smtp.auth: true
+spring.mail.properties.mail.smtp.starttls.enable: true
+spring.mail.properties.mail.smtp.starttls.required: true
+spring.mail.properties.mail.smtp.connectiontimeout: 5000
+spring.mail.properties.mail.smtp.timeout: 5000
+spring.mail.properties.mail.smtp.writetimeout: 5000
+spring.mail.properties.mail.smtp.ssl.protocols: TLSv1.2
+spring.mail.properties.mail.smtp.ssl.trust: mail.ngelmak.org

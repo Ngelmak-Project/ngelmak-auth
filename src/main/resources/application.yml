@@ -1,6 +1,6 @@
 spring:
   application:
-    name: "Ngelmak Project"
+    name: "Ngelmak Project - Auth"
     support:
       email: support@ngelmak.org
       phone: +33 1 23 45 67 89
@@ -9,35 +9,24 @@ spring:
       twitter-url: "#"
       instagram-url: "#"
 
-
   profiles:
-    active: dev # or prod
+    active: dev
 
   config.import: optional:vault:// # Enable Vault as a Config Data source. This requires at least one Vault backend to be enabled and resolvable.
   cloud:
     vault:
-      uri: http://localhost:8200
+      uri: http://vault:8200
       authentication: approle
       fail-fast: false # Enable fail-fast to force confirmation. Spring Boot to crash immediately when Vault/OpenBao is not reachable
       app-role:
-        role-id: 8a23bd57-a50a-79a3-0ae7-4964e5918ac0
-        secret-id: 0e66597f-7c9e-7ed8-8b68-897d2646c9ae
+        role-id: ""
+        secret-id: ""
       database:
         enabled: false
-        backend: database
-        role: ngelmak-rw-role
       kv:
-        application-name: "" # skip the application name prefix
         enabled: false
-        backend: kv
-        default-context: jjwt
-        profile-separator: "/" # kv/jjwt/dev or kv/jjwt/prod
-
   datasource:
-    hikari:
-      initialization-fail-timeout: 0
-    url: jdbc:postgresql://192.168.1.158:5432/ngelmakauthdb
-    # url: jdbc:postgresql://ngelmak-pgdb:5432/ngelmakauthdb
+    url: jdbc:postgresql://ngelmak-pgdb:5432/ngelmakauthdb
     username: app_migrator
     password: migratorpass
 
@@ -45,15 +34,6 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update # Use application-bootstrap.yml for updating the database schema
-
-  liquibase:
-    enabled: false
-
-server:
-  host: localhost
-  port: 4042
-  protocol: http
-
 
 logging:
   level:
@@ -71,29 +51,19 @@ logging:
 
 debug: true
 
-jwt-secret-key: NzgwODE3NjExMzk1MDFjYzc2NmRjMmM2Yjc0ZTYyMGUxODM3ZThjMzk0ZTliMTE0MjhlNjliOWRhYTI2MzFkN2RkMGU3NDVhYTA0MzRkNTBkNGEzYmZlMzE1MTg4ZjVmYzA5NmFlNTEyZjkyZjYxMGJlMTM1NmU3ZmU0NDg2Yjk=
+jwt-secret-key: "4fa3c9e1b7d24f8a9c3e5b1d7f2a9e4c6b1f8d3c2e7a4b9d3f6c1e8a2b7d4f"
 jwt-expiration-in-seconds: 86400 # 24 hours
-jwt-expiration-in-seconds-for-remember-me: 4406400 # 15 days
+jwt-expiration-in-seconds-for-remember-me: 259200 # 3 days
 
 # Frontend configuration
 frontend:
   api:
     url: https://ngelmak.org
 
-file:
-  upload-directory:
-    location: ./ngelmak-directory/files
-  public:
-    access:
-      location: /resources/public/files
-  private:
-    access:
-      location: /resources/files
-
 # Spring Mail Configuration
-spring.mail.host: mail.ngelmak.org
+spring.mail.host: mail.example.org
 spring.mail.port: 587
-spring.mail.username: no-reply@ngelmak.org
+spring.mail.username: no-reply@example.org
 spring.mail.password: MySecure$Pass123
 spring.mail.properties.mail.smtp.auth: true
 spring.mail.properties.mail.smtp.starttls.enable: true
@@ -102,4 +72,4 @@ spring.mail.properties.mail.smtp.connectiontimeout: 5000
 spring.mail.properties.mail.smtp.timeout: 5000
 spring.mail.properties.mail.smtp.writetimeout: 5000
 spring.mail.properties.mail.smtp.ssl.protocols: TLSv1.2
-spring.mail.properties.mail.smtp.ssl.trust: mail.ngelmak.org
+spring.mail.properties.mail.smtp.ssl.trust: mail.example.org

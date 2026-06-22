@@ -3,6 +3,7 @@ package org.ngelmakproject.service.email;
 import java.time.Year;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.ngelmakproject.config.Constants;
@@ -20,7 +21,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.mail.internet.MimeMessage;
 
 /**
@@ -113,9 +113,9 @@ public class MailService {
 			String keyLang,
 			String bodyTemplate,
 			EmailContext context) {
-		log.info("📧 Preparing email to {} with subject key '{}'", to, subjectKey);
+		log.debug("📧 Preparing email to {} with subject key '{}'", to, subjectKey);
 
-		Locale locale = Locale.forLanguageTag(keyLang); // e.g. "fr"
+		Locale locale = Locale.forLanguageTag(Optional.ofNullable(keyLang).orElse("fr")); // e.g. "fr"
 
 		Context thymeleaf = new Context(locale);
 
@@ -135,7 +135,7 @@ public class MailService {
 
 		// Render HTML with locale-aware message resolution
 		String html = templateEngine.process("mail/layout", thymeleaf);
-		log.info("Generated HTML for email to {}: {}", to, html);
+		log.debug("Generated HTML for email to {}: {}", to, html);
 		thymeleaf.getVariableNames().forEach(
 				name -> log.debug("{} = {}", name, thymeleaf.getVariable(name)));
 
@@ -208,7 +208,7 @@ public class MailService {
 
 	// @PostConstruct
 	public void sendTestEmail() {
-		log.info("📧 Sending test email to verify configuration...");
+		log.debug("📧 Sending test email to verify configuration...");
 		User testUser = new User();
 		testUser.setFirstName("Youssouph");
 		testUser.setLastName("Faye");
