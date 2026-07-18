@@ -358,12 +358,12 @@ public class UserService {
      * perform actual deletion after a certain grace period. This approach allows
      * for potential recovery of user accounts and ensures that any related data can
      * be handled appropriately before permanent deletion.
-     *
-     * @param id the ID of the user to be marked for deletion
      */
-    public void deleteUser(Long id) {
+    public void deleteUser() {
+        UserPrincipal principal = getUserWithAuthorities()
+                .orElseThrow(UserNotFoundException::new);
         userRepository
-                .markForDeletion(id, Instant.now());
+                .markForDeletion(principal.id(), Instant.now());
     }
 
     /**

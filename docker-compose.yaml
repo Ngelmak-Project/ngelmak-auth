@@ -1,13 +1,15 @@
 services:
   # --- Auth Service ---
-  ngelmak-auth:
+  auth:
     build: .
-    container_name: ngelmak-auth
+    container_name: auth
     environment:
-      BOOTSTRAP_DB_USERNAME: ${BOOTSTRAP_DB_USERNAME}
-      BOOTSTRAP_DB_PASSWORD: ${BOOTSTRAP_DB_PASSWORD}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      LIQUIBASE_RUN: ${LIQUIBASE_RUN}
+    depends_on:
+      - postgres
+      - redis
     networks:
       - ngelmak-net
 

@@ -23,33 +23,58 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for managing user accounts.
- * 
+ * Admin Management API
+ *
  * <p>
- * Base path: /api/admin/
- * 
- * - /api
- * - └── /admin # Admin-level secured endpoints
- * - │ ├── /users
- * - │ │ ├── GET / # List all users
- * - │ │ ├── GET /{id} # Get user details
- * - │ │ └── DELETE /{id} # Delete user
- * - │ │
- * - │ └── /management
- * - │ │ ├── GET /contacts # Get user feedback contacts
- * - │ │ ├── GET /audits
- * - │ │ ├── GET /logs
- * - │ │ └── GET /health
+ * Base path: /api/v1/admin
+ *
+ * <p>
+ * Restricted endpoints for administrative operations: user management,
+ * authority/certification handling, user blocking, and support contact
+ * inquiries.
+ *
+ * <p>
+ * Requires: Authentication + Admin role
+ *
+ * <h3>User Management</h3>
+ * <ul>
+ * <li>{@code GET /users} - List all users with pagination</li>
+ * <li>{@code GET /users/:id} - Get user details by ID</li>
+ * <li>{@code PUT /users/active} - Set user active/inactive status</li>
+ * </ul>
+ *
+ * <h3>User Authorities & Certification</h3>
+ * <ul>
+ * <li>{@code PUT /users/authorities/grant} - Grant authorities to user</li>
+ * <li>{@code PUT /users/authorities/revoke} - Revoke authorities from user</li>
+ * <li>{@code PUT /users/authorities/requests} - Approve/reject authority
+ * requests</li>
+ * <li>{@code PUT /users/certification} - Certify user account</li>
+ * <li>{@code PUT /users/certification/withdrawal/:id} - Withdraw user
+ * certification</li>
+ * </ul>
+ *
+ * <h3>User Blocking</h3>
+ * <ul>
+ * <li>{@code PUT /users/block} - Block/suspend user account</li>
+ * <li>{@code PUT /users/unblock} - Unblock user account</li>
+ * </ul>
+ *
+ * <h3>Support Management</h3>
+ * <ul>
+ * <li>{@code GET /contacts} - List contact message submissions</li>
+ * <li>{@code PUT /contacts/close/:id} - Close contact message</li>
+ * </ul>
  */
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/v1/admin")
 @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
 public class AdminResource {
 	private static final Logger log = LoggerFactory.getLogger(AdminResource.class);
@@ -76,7 +101,7 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code GET /admin/users} : get all users with all the details - calling this
+	 * {@code GET /users} : get all users with all the details - calling this
 	 * are only allowed for the administrators.
 	 *
 	 * @param pageable the pagination information.
@@ -84,29 +109,31 @@ public class AdminResource {
 	 *         all users.
 	 */
 	@GetMapping("/users")
-	public ResponseEntity<PageDTO<User>> getAllUsers(Pageable pageable) {
+	public ResponseEntity<PageDTO<User>> getAllUsers(
+			@RequestParam(value = "q", defaultValue = "") String query,
+			Pageable pageable) {
 		log.debug("REST request to get all User for an admin");
-		Page<User> page = userRepository.findAllWithAuthorities(pageable);
+		Page<User> page = query.isBlank() ? userRepository.findAllWithAuthorities(pageable)
+				: userRepository.findAllUsersBySearchCriteria(query, pageable);
 		return ResponseEntity.ok().cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS))
 				.body(PageDTO.from(page));
 	}
 
 	/**
-	 * {@code GET /admin/users/:login} : get the "login" user.
+	 * {@code GET /users/:id} : get the "id" user.
 	 *
-	 * @param login the login of the user to find.
+	 * @param id the id of the user to find.
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
-	 *         the "login" user, or with status {@code 404 (Not Found)}.
+	 *         the "id" user, or with status {@code 404 (Not Found)}.
 	 */
 	@GetMapping("/users/{id}")
-	public ResponseEntity<User> getUser(
-			@PathVariable("id") Long id) {
+	public ResponseEntity<User> getUser(@PathVariable("id") Long id) {
 		log.debug("REST request to get User : {}", id);
 		return ResponseUtil.wrapOrNotFound(userRepository.findOneWithAuthoritiesById(id));
 	}
 
 	/**
-	 * {@code PUT /admin/users/active} : change the active status of the user.
+	 * {@code PUT /users/active} : change the active status of the user.
 	 *
 	 * @param activeUserDTO the id and the new active status of the user.
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
@@ -120,7 +147,7 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code PUT /admin/users/grant-authorities} : grant authorities to a user.
+	 * {@code PUT /users/authorities/grant} : grant authorities to a user.
 	 *
 	 * @param id             of the user to update
 	 * @param authorityNames the names of the authorities to grant
@@ -130,7 +157,7 @@ public class AdminResource {
 	 *          via
 	 *          {@link MailService#sendModeratorAcceptanceEmail(User)}
 	 */
-	@PutMapping("/users/grant-authorities")
+	@PutMapping("/users/authorities/grant")
 	public ResponseEntity<User> grantAuthorities(@RequestBody GrantAuthorityDTO grantAuthorityDTO) {
 		log.debug("REST request to grant authorities {} to User : {} with reason {}",
 				grantAuthorityDTO.authorityNames(),
@@ -144,14 +171,14 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code PUT /admin/users/revoke-authorities} : revoke authorities from a user.
+	 * {@code PUT /users/authorities/revoke} : revoke authorities from a user.
 	 *
 	 * @param id             of the user to update
 	 * @param authorityNames the names of the authorities to revoke
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
 	 *         the updated user.
 	 */
-	@PutMapping("/users/revoke-authorities")
+	@PutMapping("/users/authorities/revoke")
 	public ResponseEntity<User> revokeAuthorities(@RequestBody GrantAuthorityDTO grantAuthorityDTO) {
 		log.debug("REST request to revoke authorities {} from User : {}", grantAuthorityDTO.authorityNames(),
 				grantAuthorityDTO.id());
@@ -161,13 +188,13 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code PUT /admin/users/authority-request} : handle authority request.
+	 * {@code PUT /users/authorities/requests} : handle authority request.
 	 *
 	 * @param id the id of the authority request to handle
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
 	 *         the updated user.
 	 */
-	@PutMapping("/users/authority-request")
+	@PutMapping("/users/authorities/requests")
 	public ResponseEntity<User> handleAuthorityRequest(
 			@RequestBody AccessApprovalDTO authorityRequestDTO) {
 		log.debug("REST request to handle authority request for User : {} with approve {} and reason {}",
@@ -182,7 +209,7 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code PUT /admin/users/block} : block the user.
+	 * {@code PUT /users/block} : block the user.
 	 *
 	 * @param blockUserDTO the DTO containing the user ID and suspension details.
 	 * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
@@ -197,9 +224,9 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code PUT /admin/users/unblock/:id} : unblock the user with the given id.
+	 * {@code PUT /users/unblock/:id} : unblock the user with the given id.
 	 *
-	 * @param login the login of the user to delete.
+	 * @param id the id of the user to unblock.
 	 * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
 	 */
 	@PutMapping("/users/unblock/{id}")
@@ -209,7 +236,7 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code Put /admin/users/certification} : requestion
+	 * {@code Put /users/certification} : requestion
 	 * certification for a user account.
 	 *
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
@@ -222,7 +249,8 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code Put /admin/users/certification/withdrawal} : withdrawal certification
+	 * {@code Put /users/certification/withdrawal/:id} : withdrawal
+	 * certification
 	 * for a user account.
 	 *
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
@@ -235,13 +263,13 @@ public class AdminResource {
 	}
 
 	/**
-	 * {@code GET /admin/management/contacts} : get all untreated contact messages.
+	 * {@code GET /contacts} : get all untreated contact messages.
 	 *
 	 * @param pageable the pagination information.
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
 	 *         all untreated contact messages.
 	 */
-	@GetMapping("/management/contacts")
+	@GetMapping("/contacts")
 	public ResponseEntity<PageDTO<ContactMessage>> getContactMessages(Pageable pageable) {
 		log.debug("REST request to get all Contact Message for an admin");
 		PageDTO<ContactMessage> page = adminService.findAll(pageable);
@@ -249,20 +277,17 @@ public class AdminResource {
 				.body(page);
 	}
 
-	private record CloseContactMessageDTO(Long id) {
-	}
-
 	/**
-	 * {@code POST /admin/management/close} : close a contact messages.
+	 * {@code PUT /contacts/close/:id} : close a contact messages.
 	 *
 	 * @param pageable the pagination information.
 	 * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body
 	 *         of the updated contact message.
 	 */
-	@PostMapping("/management/close")
-	public ResponseEntity<ContactMessage> closeContactMessages(@RequestBody CloseContactMessageDTO contactMessageDTO) {
-		log.debug("REST request to close a Contact Message : {}", contactMessageDTO);
-		ContactMessage message = adminService.closeContactMessage(contactMessageDTO.id);
+	@PutMapping("/contacts/close/{id}")
+	public ResponseEntity<ContactMessage> closeContactMessages(@PathVariable("id") Long id) {
+		log.debug("REST request to close a Contact Message : {}", id);
+		ContactMessage message = adminService.closeContactMessage(id);
 		return ResponseEntity.ok().body(message);
 	}
 }

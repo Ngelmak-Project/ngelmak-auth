@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
-import org.bouncycastle.jcajce.BCFKSLoadStoreParameter.SignatureAlgorithm;
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.User;
 import org.slf4j.Logger;

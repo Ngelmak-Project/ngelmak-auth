@@ -17,7 +17,7 @@ public final class Constants {
 
     // Frontend Auth Routes
     public static final String FRONTEND_AUTH_ACTIVATION = "/activate";
-    public static final String FRONTEND_AUTH_RESET_PASSWORD = "/reset-password-finish";
+    public static final String FRONTEND_AUTH_RESET_PASSWORD = "/password-reset-finish";
     public static final String FRONTEND_AUTH_VERIFY_EMAIL = "/verify-email";
     public static final String FRONTEND_AUTH_RESEND_ACTIVATION = "/resend-activation";
     public static final String FRONTEND_MODERATION_APPEAL = "/moderation/appeal";

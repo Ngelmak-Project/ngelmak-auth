@@ -87,9 +87,9 @@ public class AuthenticateService {
         // Encrypt the user's password
         String encryptedPassword = passwordEncoder.encode(userDTO.password());
         // Set login (converted to lowercase to ensure uniqueness)
-        newUser.setLogin(userDTO.login().toLowerCase());
+        newUser.setLogin(userDTO.login().trim().toLowerCase());
         // Set email (converted to lowercase to ensure uniqueness)
-        newUser.setEmail(userDTO.email().toLowerCase());
+        newUser.setEmail(userDTO.email().trim().toLowerCase());
         // Set encrypted password
         newUser.setPassword(encryptedPassword);
         newUser.setDarkModeEnabled(true);
@@ -100,6 +100,7 @@ public class AuthenticateService {
         // Generate a unique activation key
         newUser.setActivationKey(RandomUtil.generateKey());
         newUser.setActivationDate(Instant.now());
+        newUser.setCreatedDate(Instant.now());
         // Assign default user authority
         var defaultAuthority = new Authority();
         defaultAuthority.setName(AuthoritiesConstants.USER);

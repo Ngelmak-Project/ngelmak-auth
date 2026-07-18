@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,24 +29,42 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for managing the current user's account.
- * 
+ * REST controller for managing the current authenticated user's account.
+ *
  * <p>
- * Base path: /api/user/
- * 
- * - /api
- * - └── /user # User-level secured endpoints
- * - │ ├── GET /profile
- * - │ ├── PUT /update
- * - │ ├── PUT /upload-avatar
- * - │ ├── POST /change-password
- * - │ ├── PUT /email
- * - │ ├── POST /authorities/request
- * - │ ├── GET /authorities/requests
- * - │ └── POST /certifications
+ * Base path: /api/v1/me
+ *
+ * <p>
+ * Endpoints for the authenticated user to manage their profile, credentials,
+ * authorities, and certifications.
+ *
+ * <p>
+ * Requires: Authentication
+ *
+ * <h3>Profile Management</h3>
+ * <ul>
+ * <li>{@code GET /} - Get current user profile</li>
+ * <li>{@code PUT /} - Update current user profile</li>
+ * <li>{@code DELETE /} - Delete current user profile</li>
+ * <li>{@code PUT /avatar} - Update user avatar</li>
+ * </ul>
+ *
+ * <h3>Credentials & Email</h3>
+ * <ul>
+ * <li>{@code POST /password} - Change password</li>
+ * <li>{@code PUT /email} - Update email address</li>
+ * <li>{@code PUT /login} - Update login username</li>
+ * </ul>
+ *
+ * <h3>Authorities & Certification</h3>
+ * <ul>
+ * <li>{@code GET /authorities} - Get authority requests</li>
+ * <li>{@code POST /authorities} - Request new authority</li>
+ * <li>{@code POST /certifications} - Create certification</li>
+ * </ul>
  */
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/v1/me")
 @PreAuthorize("isAuthenticated()")
 public class UserResource {
 
@@ -73,20 +92,20 @@ public class UserResource {
     }
 
     /**
-     * {@code GET  /profile} : get the current user.
+     * {@code GET  /} : get the current user.
      *
      * @return the current user.
      * @throws UserNotFoundException {@code 404 (Resource Not Found)} If the user
      *                               couldn't be returned.
      */
-    @GetMapping("/profile")
+    @GetMapping()
     public ResponseEntity<UserDTO> getUser() {
         log.debug("Request to get current User details");
         return ResponseEntity.ok(UserDTO.from(userService.profile()));
     }
 
     /**
-     * {@code PUT  /update} : update the current user information.
+     * {@code PUT  /} : update the current user information.
      *
      * @param userDTO the current user information.
      * @throws EmailAlreadyUsedException {@code 400 (Bad Request)} If the email is
@@ -94,7 +113,7 @@ public class UserResource {
      * @throws UserNotFoundException     {@code 404 (Resource Not Found)} If the
      *                                   user login wasn't found.
      */
-    @PutMapping("/update")
+    @PutMapping("")
     public ResponseEntity<UserDTO> updateUser(@RequestBody UserUpdateDTO userUpdateDTO) {
         log.debug("REST request to update User : {}", userUpdateDTO);
         return ResponseEntity.ok()
@@ -102,13 +121,26 @@ public class UserResource {
     }
 
     /**
-     * {@code POST  /change-password} : changes the current user's password.
+     * {@code DELETE  /} : delete the current user.
+     *
+     * @throws UserNotFoundException {@code 404 (Resource Not Found)} If the user
+     *                               login wasn't found.
+     */
+    @DeleteMapping()
+    public ResponseEntity<Void> deleteUser() {
+        log.debug("REST request to delete current User");
+        userService.deleteUser();
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * {@code POST  /password} : changes the current user's password.
      *
      * @param passwordChangeDto current and new password.
      * @throws InvalidPasswordException {@code 400 (Bad Request)} If the new
      *                                  password is incorrect.
      */
-    @PostMapping("/change-password")
+    @PostMapping("/password")
     public void changePassword(@RequestBody PasswordChangeDTO passwordChangeDto) {
         log.debug("REST request to change User's password : {}", passwordChangeDto);
         userService.changePassword(passwordChangeDto.currentPassword(), passwordChangeDto.newPassword());
@@ -155,7 +187,7 @@ public class UserResource {
     }
 
     /**
-     * {@code POST /authorities/request} : Endpoint to request a new authority for
+     * {@code POST /authorities} : Endpoint to request a new authority for
      * the current user.
      *
      * @param authorityName the name of the authority to request
@@ -169,7 +201,7 @@ public class UserResource {
      *          their authority (moderator) request via
      *          {@link MailService#sendModeratorRequestAcknowledgmentEmail(User)}
      */
-    @PostMapping("/authorities/request")
+    @PostMapping("/authorities")
     public AuthorityRequest requestAuthority(@RequestBody AccessApprovalDTO authorityRequestDTO) {
         log.debug("REST request to request authority {} with motivation {}", authorityRequestDTO.authorityName(),
                 authorityRequestDTO.motivation());
@@ -180,13 +212,13 @@ public class UserResource {
     }
 
     /**
-     * {@code GET /authorities/requests} : Endpoint to get the current user's
+     * {@code GET /authorities} : Endpoint to get the current user's
      * authority requests.
      *
      * @return a list of AuthorityRequestDTO representing the current user's
      *         authority requests
      */
-    @GetMapping("/authorities/requests")
+    @GetMapping("/authorities")
     public ResponseEntity<List<AuthorityRequestDTO>> getAuthorityRequests() {
         log.debug("REST request to get current User's authority requests");
         return ResponseEntity.ok(userService.getCurrentUserAuthorityRequests());

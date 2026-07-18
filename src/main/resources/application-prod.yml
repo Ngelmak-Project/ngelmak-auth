@@ -28,13 +28,14 @@ spring:
         application-name: jjwt,email/noreply
         default-context: ""  # or omit this entirely
   datasource:
-    hikari:
-      initialization-fail-timeout: 0
+    hikari.initialization-fail-timeout: 0
+    hikari.max-lifetime: 1800000   # 30 minutes
+    hikari.idle-timeout: 600000    # 10 minutes
+    hikari.validation-timeout: 5000
     url: jdbc:postgresql://postgres:5432/ngelmakauthdb
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: none # Use application-bootstrap.yml for updating the database schema
+    hibernate.ddl-auto: none # Use application-bootstrap.yml for updating the database schema
   jackson:
     serialization:
       fail-on-empty-beans: false

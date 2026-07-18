@@ -37,8 +37,8 @@ public class SpringSecurityConfig {
      * Defines the list of public (unauthenticated) API endpoints.
      *
      * This RequestMatcher is shared between:
-     *  - the SecurityFilterChain (to mark these endpoints as permitAll)
-     *  - the JwtAuthenticationFilter (to skip JWT validation on these endpoints)
+     * - the SecurityFilterChain (to mark these endpoints as permitAll)
+     * - the JwtAuthenticationFilter (to skip JWT validation on these endpoints)
      *
      * Keeping this list in a single bean avoids duplication and ensures
      * consistent behavior across the security layer.
@@ -46,11 +46,20 @@ public class SpringSecurityConfig {
     @Bean
     public RequestMatcher publicEndpointsMatcher() {
         return new OrRequestMatcher(
-                new AntPathRequestMatcher("/api/public/**"));
+                new AntPathRequestMatcher("/api/v1/login"),
+                new AntPathRequestMatcher("/api/v1/register"),
+                new AntPathRequestMatcher("/api/v1/activate"),
+                new AntPathRequestMatcher("/api/v1/activate/resend"),
+                new AntPathRequestMatcher("/api/v1/password-reset"),
+                new AntPathRequestMatcher("/api/v1/password-reset/confirm"),
+                new AntPathRequestMatcher("/api/v1/contact"),
+                new AntPathRequestMatcher("/api/v1/donations/stats"),
+                new AntPathRequestMatcher("/api/v1/donations/recent"));
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, RequestMatcher publicEndpointsMatcher, JwtAuthenticationFilter jwtFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, RequestMatcher publicEndpointsMatcher,
+            JwtAuthenticationFilter jwtFilter) throws Exception {
         return http
                 .cors(Customizer.withDefaults())
                 .csrf(csrf -> csrf.disable())
@@ -69,5 +78,9 @@ public class SpringSecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new BCryptPasswordEncoder().encode("user"));
     }
 }

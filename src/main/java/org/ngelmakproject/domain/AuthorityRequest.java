@@ -7,6 +7,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,11 +30,11 @@ public class AuthorityRequest implements Serializable {
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_authority_request_user"))
     private User user;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "authority_name")
+    @JoinColumn(name = "authority_name", foreignKey = @ForeignKey(name = "fk_authority_request_authority"))
     private Authority authority;
 
     @NotNull
@@ -51,7 +52,7 @@ public class AuthorityRequest implements Serializable {
     private Instant decidedAt;
 
     @ManyToOne
-    @JoinColumn(name = "decided_by")
+    @JoinColumn(name = "decided_by", foreignKey = @ForeignKey(name = "fk_authority_request_decided_by"))
     private User decidedBy;
 
     @Column(name = "decision_reason", length = 1000, nullable = true)
@@ -133,5 +134,4 @@ public class AuthorityRequest implements Serializable {
         this.decisionReason = decisionReason;
     }
 
-    
 }

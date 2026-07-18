@@ -7,6 +7,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -17,7 +18,8 @@ import jakarta.persistence.Table;
 
 /**
  * A AuthorityHistory. Represents a change in a user's authorities.
- * For example, when a user requests a new authority, or when an admin approves or rejects such a request.
+ * For example, when a user requests a new authority, or when an admin approves
+ * or rejects such a request.
  */
 @Entity
 @Table(name = "authority_history")
@@ -31,27 +33,27 @@ public class AuthorityHistory implements Serializable {
     @Column(name = "id")
     private Long id;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "authority_name")
-    private Authority authority;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "action", nullable = false)
-    private Action action;
-
-    @ManyToOne
-    @JoinColumn(name = "actor_id")
-    private User actor;
-
     @Column(name = "reason", columnDefinition = "TEXT")
     private String reason;
 
     @Column(name = "timestamp", nullable = false)
     private Instant timestamp = Instant.now();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "action", nullable = false)
+    private Action action;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_authority_history_user"))
+    private User user;
+
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "authority_name", foreignKey = @ForeignKey(name = "fk_authority_history_authority"))
+    private Authority authority;
+
+    @ManyToOne
+    @JoinColumn(name = "actor_id", foreignKey = @ForeignKey(name = "fk_authority_history_actor"))
+    private User actor;
 
     public enum Action {
         APPROVED, REVOKED

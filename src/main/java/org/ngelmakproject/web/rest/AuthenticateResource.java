@@ -25,26 +25,28 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Public Authentication Controller.
- * 
+ * Authentication API
+ *
  * <p>
- * Base path: /api/public/
- * 
- * - /api
- * - └── /public # Unsecured endpoints
- * - │ ├── /auth # Authentication & account lifecycle
- * - │ │ ├── POST /authenticate
- * - │ │ ├── POST /register
- * - │ │ ├── GET /activate?key=...
- * - │ │ ├── POST /activate/resend
- * - │ │ ├── POST /password-reset/init
- * - │ │ └── POST /password-reset/finish
- * - │ │
- * - │ └── /support # Public contact/support forms
- * - │ │ └── POST /contact
+ * Base path: /api/v1
+ *
+ * <p>
+ * Public endpoints for user authentication, registration, account activation,
+ * password management, and support contact.
+ *
+ * <h3>Endpoints</h3>
+ * <ul>
+ * <li>{@code POST /login} - Authenticate user and get JWT token</li>
+ * <li>{@code POST /register} - Create new user account</li>
+ * <li>{@code GET /activate} - Activate account via email key</li>
+ * <li>{@code POST /activate/resend} - Resend activation email</li>
+ * <li>{@code POST /password-reset/init} - Request password reset</li>
+ * <li>{@code POST /password-reset/finish} - Complete password reset</li>
+ * <li>{@code POST /contact} - Send support contact message</li>
+ * </ul>
  */
 @RestController
-@RequestMapping("/api/public")
+@RequestMapping("/api/v1")
 public class AuthenticateResource {
 
     private static final Logger log = LoggerFactory.getLogger(AuthenticateResource.class);
@@ -61,7 +63,7 @@ public class AuthenticateResource {
     }
 
     /**
-     * {@code POST  /auth/authenticate} : Authenticates a user using login
+     * {@code POST  /login} : Authenticates a user using login
      * credentials and returns a JWT token.
      *
      * <ul>
@@ -74,7 +76,7 @@ public class AuthenticateResource {
      * @return {@code 200 (OK)} with JWT token if authentication succeeds,
      *         401 Unauthorized if credentials are invalid
      */
-    @PostMapping("/auth/authenticate")
+    @PostMapping("/login")
     public ResponseEntity<JWTToken> authenticate(
             @RequestBody LoginRequestDTO loginRequestDTO) {
         log.debug("REST request for loging User : {}", loginRequestDTO);
@@ -89,19 +91,16 @@ public class AuthenticateResource {
     }
 
     /**
-     * {@code POST  /auth/activate?key=...} : Authenticates a user using login
-     * credentials and returns a JWT token.
+     * {@code POST  /register} : Registers a new user account and sends an
+     * activation email.
      *
-     * <ul>
-     * <li>Validates login credentials</li>
-     * <li>Ensures the account is activated and not blocked</li>
-     * <li>Generates a JWT token (standard or remember-me)</li>
-     * </ul>
-     *
-     * @param loginRequestDTO DTO containing login, password, and remember-me flag.
+     * @param userDTO the user registration information.
+     * @throws UserAlreadyActivatedException {@code 400 (Bad Request)} If the user
+     *                                       is already activated.
+     * @apiNote After successful registration, an activation email is sent to the
      * @return {@code 200 (OK)} with the created UserDTO
      */
-    @PostMapping("/auth/register")
+    @PostMapping("/register")
     public ResponseEntity<UserDTO> register(
             @RequestBody RegisterRequestDTO userDTO) {
         log.debug("REST request to register a new User : {}", userDTO);
@@ -112,7 +111,7 @@ public class AuthenticateResource {
     }
 
     /**
-     * {@code GET  /auth/activate?key=...} : Activates a user account using a
+     * {@code GET  /activate?key=...} : Activates a user account using a
      * temporary
      * verification key.
      *
@@ -121,7 +120,7 @@ public class AuthenticateResource {
      *                               couldn't be activated.
      * @apiNote After successful activation, a welcome email is sent to the user.
      */
-    @GetMapping("/auth/activate")
+    @GetMapping("/activate")
     public void activateUser(@RequestParam String key) {
         log.debug("REST request to activate User's email");
         User user = authService.activateUserByKey(key);
@@ -132,7 +131,7 @@ public class AuthenticateResource {
     }
 
     /**
-     * {@code POST  /auth/activate/resend} : Resends the activation email to the
+     * {@code POST  /activate/resend} : Resends the activation email to the
      * user.
      *
      * @param emailResetDTO the user's email address.
@@ -141,7 +140,7 @@ public class AuthenticateResource {
      * @apiNote If the email is associated with an existing account that is not yet
      *          activated, a new activation email will be sent.
      */
-    @PostMapping("/auth/activate/resend")
+    @PostMapping("/activate/resend")
     public void resendActivation(@RequestBody EmailResetDTO emailResetDTO) {
         log.debug("REST request to resend activation email for {}", emailResetDTO.email);
         authService.resendActivation(emailResetDTO.email)
@@ -149,7 +148,7 @@ public class AuthenticateResource {
     }
 
     /**
-     * {@code POST  /auth/reset-password/init} : Initiates a password reset request
+     * {@code POST  /password-reset/init} : Initiates a password reset request
      * by
      * generating a temporary key and sending it to the user's email address.
      *
@@ -158,7 +157,7 @@ public class AuthenticateResource {
      *          reset email will be sent containing a temporary key for resetting
      *          the password.
      */
-    @PostMapping("/auth/reset-password/init")
+    @PostMapping("/password-reset/init")
     public void requestPasswordReset(@RequestBody EmailResetDTO resetDTO) {
         log.debug("REST request to initiate password reset for {}", resetDTO.email);
         authService.requestPasswordReset(resetDTO.email)
@@ -169,14 +168,14 @@ public class AuthenticateResource {
     }
 
     /**
-     * {@code POST  /auth/reset-password/finish} : Completes the password reset
+     * {@code POST  /password-reset/finish} : Completes the password reset
      * process
      * by validating the temporary key and setting a new password.
      *
      * @param key         the temporary reset key
      * @param newPassword the new password chosen by the user
      */
-    @PostMapping("/auth/reset-password/finish")
+    @PostMapping("/password-reset/finish")
     public void completePasswordReset(@RequestBody CompletePasswordResetDTO resetDTO) {
         log.debug("REST request to complete password reset : {}", resetDTO);
         authService.completePasswordReset(resetDTO.key, resetDTO.newPassword);
@@ -188,13 +187,13 @@ public class AuthenticateResource {
     }
 
     /**
-     * {@code POST  /support/contact} : Endpoint to send a contact message to
+     * {@code POST  /contact} : Endpoint to send a contact message to
      * support.
      *
      * @param contactRequestDTO the contact message information.
      * @return {@code 200 (OK)} if the message was sent successfully.
      */
-    @PostMapping("/support/contact")
+    @PostMapping("/contact")
     public ResponseEntity<Void> contact(@RequestBody ContactRequestDTO contactRequestDTO) {
         log.debug("REST request to send a contact message : {}", contactRequestDTO);
         authService.contactSupport(contactRequestDTO.name(), contactRequestDTO.email(),

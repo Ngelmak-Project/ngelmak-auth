@@ -12,11 +12,11 @@ import org.ngelmakproject.domain.enumeration.DocType;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -51,6 +51,16 @@ public class User implements Serializable {
     @Column(length = 50, unique = true, nullable = false)
     private String login;
 
+    /**
+     * The user's email address, which can be used for account activation, password
+     * reset, and notifications.
+     */
+    @Email
+    @NotNull
+    @Size(min = 5, max = 254)
+    @Column(length = 254, unique = true, nullable = false)
+    private String email;
+
     @JsonIgnore
     @NotNull
     @Size(min = 60, max = 60)
@@ -64,15 +74,6 @@ public class User implements Serializable {
     @Size(max = 50)
     @Column(name = "last_name", length = 50)
     private String lastName;
-
-    /**
-     * The user's email address, which can be used for account activation, password
-     * reset, and notifications.
-     */
-    @Email
-    @Size(min = 5, max = 254)
-    @Column(length = 254, nullable = true)
-    private String email;
 
     /* If the user has activated their account via email confirmation. */
     @NotNull
@@ -128,7 +129,7 @@ public class User implements Serializable {
 
     /* Timestamp indicating when the user record was initially created. */
     @Column(name = "created_date")
-    private Instant createdDate = null;
+    private Instant createdDate = Instant.now();
 
     /* Timestamp marking when the user account was soft‑deleted. */
     @Column(name = "deleted_date")
@@ -181,14 +182,10 @@ public class User implements Serializable {
     /*
      * The authorities/roles that are assigned to the user. This is a many-to-many
      * relationship because a user can have multiple roles and a role can be
-     * assigned
-     * to multiple users.
+     * assigned to multiple users.
      */
-    @JsonIgnore
-    @ManyToMany(cascade = CascadeType.REMOVE)
-    @JoinTable(name = "user_authority", joinColumns = {
-            @JoinColumn(name = "user_id", referencedColumnName = "id") }, inverseJoinColumns = {
-                    @JoinColumn(name = "authority_name", referencedColumnName = "name") })
+    @ManyToMany
+    @JoinTable(name = "user_authority", joinColumns = @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_user_authority_user", foreignKeyDefinition = "FOREIGN KEY (user_id) REFERENCES user_ngelmak(id) ON DELETE CASCADE")), inverseJoinColumns = @JoinColumn(name = "authority_name", foreignKey = @ForeignKey(name = "fk_user_authority_authority", foreignKeyDefinition = "FOREIGN KEY (authority_name) REFERENCES authority(name)")))
     @BatchSize(size = 20)
     private Set<Authority> authorities = new HashSet<>();
 
