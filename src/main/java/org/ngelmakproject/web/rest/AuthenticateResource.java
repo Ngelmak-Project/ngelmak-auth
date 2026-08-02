@@ -1,10 +1,12 @@
 package org.ngelmakproject.web.rest;
 
+import java.time.Instant;
 import java.util.Optional;
 
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.service.AuthenticateService;
 import org.ngelmakproject.service.email.MailService;
+import org.ngelmakproject.web.rest.dto.AuthenticationResponse;
 import org.ngelmakproject.web.rest.dto.LoginRequestDTO;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.dto.UserDTO;
@@ -13,16 +15,17 @@ import org.ngelmakproject.web.rest.errors.UserNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Authentication API
@@ -57,7 +60,8 @@ public class AuthenticateResource {
     private final AuthenticateService authService;
     private final MailService mailService;
 
-    public AuthenticateResource(AuthenticateService authService, MailService mailService) {
+    public AuthenticateResource(AuthenticateService authService,
+            MailService mailService) {
         this.authService = authService;
         this.mailService = mailService;
     }
@@ -77,17 +81,89 @@ public class AuthenticateResource {
      *         401 Unauthorized if credentials are invalid
      */
     @PostMapping("/login")
-    public ResponseEntity<JWTToken> authenticate(
-            @RequestBody LoginRequestDTO loginRequestDTO) {
-        log.debug("REST request for loging User : {}", loginRequestDTO);
-        Optional<String> tokenOptional = authService.authenticate(loginRequestDTO);
+    public ResponseEntity<LoginResponseDTO> authenticate(
+            @RequestBody LoginRequestDTO request) {
+        log.debug("REST request for loging User : {}", request);
+        Optional<AuthenticationResponse> optional = authService.authenticate(request);
 
-        if (tokenOptional.isEmpty()) {
+        if (optional.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String token = tokenOptional.get();
-        return ResponseEntity.ok(new JWTToken(token));
+        var auth = optional.get();
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", auth.rt().getToken())
+                .httpOnly(true)
+                // .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(auth.rt().getExpiresAt().getEpochSecond())
+                .build();
+
+        // Body for mobile apps
+        LoginResponseDTO body = new LoginResponseDTO(
+                auth.accessToken(),
+                auth.rt().getToken(),
+                auth.rt().getExpiresAt());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(body);
+    }
+
+    /**
+     * {@code POST /refresh} : Issues a new access token using a valid refresh
+     * token.
+     *
+     * Accepts the refresh token from either the cookie (browser clients)
+     * or the request body (mobile clients). Returns a new access token and,
+     * for mobile clients, a new refresh token.
+     *
+     * @param cookieToken the refresh token from the cookie (browser), may be null
+     * @param body        optional DTO containing the refresh token (mobile), may be
+     *                    null
+     * @return {@code 200 (OK)} with new tokens if refresh succeeds,
+     *         {@code 401 (Unauthorized)} if the refresh token is missing or invalid
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponseDTO> refresh(
+            @CookieValue(value = "refreshToken", required = false) String cookieToken,
+            @RequestBody(required = false) RefreshRequestDTO body) {
+
+        log.info("REST request to refresh token with cookieToken: {} and body: {}", cookieToken, body);
+
+        String token = cookieToken != null ? cookieToken : (body != null ? body.refreshToken() : null);
+
+        if (token == null) {
+            log.warn("No refresh token provided in cookie or request body");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<AuthenticationResponse> optional = authService.refreshToken(token);
+
+        if (optional.isEmpty()) {
+            log.warn("Invalid refresh token provided");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        var auth = optional.get();
+
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", auth.rt().getToken())
+                .httpOnly(true)
+                // .secure(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(auth.rt().getExpiresAt().getEpochSecond())
+                .build();
+
+        LoginResponseDTO bodyResponse = new LoginResponseDTO(
+                auth.accessToken(),
+                auth.rt().getToken(),
+                auth.rt().getExpiresAt());
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(bodyResponse);
     }
 
     /**
@@ -204,21 +280,13 @@ public class AuthenticateResource {
     /**
      * Object to return as body in JWT Authentication.
      */
-    static class JWTToken {
-        private String idToken;
+    public record LoginResponseDTO(
+            String accessToken,
+            String refreshToken,
+            Instant refreshTokenExpiresAt) {
+    }
 
-        JWTToken(String idToken) {
-            this.idToken = idToken;
-        }
-
-        @JsonProperty("id_token")
-        String getIdToken() {
-            return idToken;
-        }
-
-        void setIdToken(String idToken) {
-            this.idToken = idToken;
-        }
+    public record RefreshRequestDTO(String refreshToken) {
     }
 
 }

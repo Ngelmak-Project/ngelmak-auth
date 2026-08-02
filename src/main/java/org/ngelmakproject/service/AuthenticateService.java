@@ -1,5 +1,6 @@
 package org.ngelmakproject.service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
@@ -7,11 +8,13 @@ import java.util.Set;
 
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.ContactMessage;
+import org.ngelmakproject.domain.RefreshToken;
 import org.ngelmakproject.domain.User;
 import org.ngelmakproject.repository.ContactMessageRepository;
 import org.ngelmakproject.repository.UserRepository;
 import org.ngelmakproject.security.AuthoritiesConstants;
 import org.ngelmakproject.security.JwtUtil;
+import org.ngelmakproject.web.rest.dto.AuthenticationResponse;
 import org.ngelmakproject.web.rest.dto.LoginRequestDTO;
 import org.ngelmakproject.web.rest.dto.RegisterRequestDTO;
 import org.ngelmakproject.web.rest.errors.EmailAlreadyUsedException;
@@ -39,13 +42,16 @@ public class AuthenticateService {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
     private final ContactMessageRepository contactMessageRepository;
 
     public AuthenticateService(JwtUtil jwtUtil, UserRepository userRepository, PasswordEncoder passwordEncoder,
+            RefreshTokenService refreshTokenService,
             ContactMessageRepository contactMessageRepository) {
         this.jwtUtil = jwtUtil;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.refreshTokenService = refreshTokenService;
         this.contactMessageRepository = contactMessageRepository;
     }
 
@@ -114,44 +120,54 @@ public class AuthenticateService {
     }
 
     /**
-     * Authenticates a user and generates a JWT token.
+     * Authenticates a user and issues access and refresh tokens.
+     * Returns empty if credentials are invalid.
      *
-     * <p>
-     * This method performs the following operations:
-     * <ul>
-     * <li>Looks up the user by login</li>
-     * <li>Ensures the account is activated</li>
-     * <li>Ensures the account is not blocked</li>
-     * <li>Verifies the password</li>
-     * <li>Generates a JWT token (standard or remember-me)</li>
-     * </ul>
-     *
-     * @param loginRequestDTO Contains login credentials and remember-me preference
-     * @return Optional containing the JWT token if authentication succeeds,
-     *         or an empty Optional if authentication fails
+     * @param loginRequestDTO the login request containing login and password
+     * @return an Optional containing the authentication response, or empty if
+     *         authentication fails
      */
-    public Optional<String> authenticate(LoginRequestDTO loginRequestDTO) {
-        log.debug("Request to authenticate a User: {}", loginRequestDTO);
-        return userRepository.findOneByEmailIgnoreCaseOrLoginIgnoreCase(loginRequestDTO.login(), loginRequestDTO.login())
+    public Optional<AuthenticationResponse> authenticate(LoginRequestDTO loginRequestDTO) {
+        log.debug("Authenticating user: {}", loginRequestDTO.login());
+
+        return userRepository
+                .findOneByEmailIgnoreCaseOrLoginIgnoreCase(loginRequestDTO.login(), loginRequestDTO.login())
                 .map(user -> {
-                    // Account must be activated
-                    if (!user.isActivated()) {
+                    if (!user.isActivated())
                         throw new UserNotActivatedException();
-                    }
-
-                    // Account must not be blocked
-                    if (user.isBlocked()) {
+                    if (user.isBlocked())
                         throw new UserBlockedException();
-                    }
-
                     return user;
                 })
-                // Verify password
                 .filter(user -> passwordEncoder.matches(loginRequestDTO.password(), user.getPassword()))
-                // Generate token
-                .map(user -> loginRequestDTO.rememberMe()
-                        ? jwtUtil.generateRememberMeToken(user)
-                        : jwtUtil.generateToken(user));
+                .map(user -> {
+                    String accessToken = jwtUtil.generateAccessToken(user);
+                    Duration ttl = loginRequestDTO.rememberMe()
+                            ? Duration.ofDays(30)
+                            : Duration.ofDays(7);
+                    RefreshToken rt = refreshTokenService.create(user, ttl);
+                    return new AuthenticationResponse(user.getId(), accessToken, rt);
+                });
+    }
+
+    /**
+     * Refreshes an access token using the provided refresh token.
+     * Returns empty if the refresh token cannot be rotated or the user cannot be
+     * loaded.
+     *
+     * @param refreshToken the refresh token string provided by the client
+     * @return an Optional containing the new authentication response, or empty if
+     *         refresh fails
+     */
+    public Optional<AuthenticationResponse> refreshToken(String refreshToken) {
+        log.debug("Refreshing token: {}", refreshToken);
+
+        return refreshTokenService.rotate(refreshToken, Duration.ofDays(7))
+                .flatMap(rt -> userRepository.findById(rt.getUser().getId())
+                        .map(user -> {
+                            String accessToken = jwtUtil.generateAccessToken(user);
+                            return new AuthenticationResponse(user.getId(), accessToken, rt);
+                        }));
     }
 
     /**

@@ -1,5 +1,7 @@
 package org.ngelmakproject.security;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Optional;
@@ -9,15 +11,21 @@ import javax.crypto.SecretKey;
 
 import org.ngelmakproject.domain.Authority;
 import org.ngelmakproject.domain.User;
+import org.ngelmakproject.web.rest.errors.TokenExpiredException;
+import org.ngelmakproject.web.rest.errors.UnauthorizedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 
 /**
  * Utility class for generating and validating JWT tokens using JJWT 0.9.1.
@@ -28,14 +36,8 @@ public class JwtUtil {
   private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
   private final SecretKey secretKey;
-  private final long expirationSeconds;
-  private final long rememberMeExpirationSeconds;
 
-  public JwtUtil(
-      @Value("${jwt-secret-key}") String secret,
-      @Value("${jwt-expiration-in-seconds}") long expirationSeconds,
-      @Value("${jwt-expiration-in-seconds-for-remember-me}") long rememberMeExpirationSeconds) {
-
+  public JwtUtil(@Value("${jwt-secret-key}") String secret) {
     SecretKey key = null;
 
     try {
@@ -48,8 +50,6 @@ public class JwtUtil {
     }
 
     this.secretKey = key;
-    this.expirationSeconds = expirationSeconds;
-    this.rememberMeExpirationSeconds = rememberMeExpirationSeconds;
   }
 
   /**
@@ -60,7 +60,7 @@ public class JwtUtil {
    * @param authorities Set of roles or permissions
    * @return Signed JWT token as a String
    */
-  public String buildToken(User user, long expirationSeconds) {
+  public String generateAccessToken(User user) {
     long now = System.currentTimeMillis();
     return Jwts.builder().subject(user.getId().toString())
         .claim("login", user.getLogin())
@@ -68,17 +68,10 @@ public class JwtUtil {
         .claim("lastName", user.getLastName())
         .claim("email", user.getEmail())
         .claim("authorities", user.getAuthorities().stream().map(Authority::getName).collect(Collectors.joining(",")))
-        .issuedAt(new Date(now)).expiration(new Date(now + expirationSeconds * 1000))
+        // .issuedAt(new Date(now)).expiration(Date.from(Instant.now().plus(24, ChronoUnit.HOURS)))
+        .issuedAt(new Date(now)).expiration(Date.from(Instant.now().plus(1, ChronoUnit.HOURS)))
         .signWith(secretKey)
         .compact();
-  }
-
-  public String generateToken(User user) {
-    return buildToken(user, expirationSeconds);
-  }
-
-  public String generateRememberMeToken(User user) {
-    return buildToken(user, rememberMeExpirationSeconds);
   }
 
   /**
@@ -89,9 +82,18 @@ public class JwtUtil {
   public Claims validateToken(String token) {
     try {
       return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
+    } catch (ExpiredJwtException e) {
+      throw new TokenExpiredException("Token has expired");
+    } catch (SignatureException e) {
+      throw new UnauthorizedException("Invalid signature");
+    } catch (MalformedJwtException e) {
+      throw new UnauthorizedException("Malformed token");
+    } catch (UnsupportedJwtException e) {
+      throw new UnauthorizedException("Unsupported token");
+    } catch (IllegalArgumentException e) {
+      throw new UnauthorizedException("Token is empty");
     } catch (JwtException e) {
-      log.warn("JWT validation failed: {}", e.getMessage());
-      throw e;
+      throw new UnauthorizedException("JWT processing error");
     }
   }
 

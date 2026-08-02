@@ -9,5 +9,6 @@ import jakarta.validation.constraints.Size;
 public record LoginRequestDTO(
         @NotNull(message = "Login is requed") @Size(min = 3, max = 50) String login,
         @NotNull(message = "Password is requed") @Size(min = 8, max = 100) String password,
-        boolean rememberMe) {
+        boolean rememberMe,
+        boolean isMobile) {
 }
